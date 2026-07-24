@@ -1,0 +1,103 @@
+{
+  "title": "API Garage - Traces (Jaeger)",
+  "uid": "api-garage-jaeger-traces",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "timezone": "browser",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "tags": ["api-garage", "jaeger", "traces"],
+  "panels": [
+    { "id": 100, "type": "row", "title": "Jaeger", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    {
+      "id": 1,
+      "title": "About this dashboard",
+      "type": "text",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 1 },
+      "options": {
+        "mode": "markdown",
+        "content": "Tabelas de traces recentes vindas do Jaeger. Clique no **Trace ID** de qualquer linha para abrir a waterfall completa. O datasource Jaeger não suporta agregações (percentis, taxas etc.) como Prometheus/Loki — para análise profunda de um trace específico, use a [UI do Jaeger](http://localhost:16686)."
+      }
+    },
+    {
+      "id": 2,
+      "title": "Recent traces",
+      "type": "table",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "jaeger", "uid": "jaeger" },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Duration" }, "properties": [{ "id": "unit", "value": "µs" }] }
+        ]
+      },
+      "options": {
+        "sortBy": [{ "displayName": "Start time", "desc": true }]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "jaeger", "uid": "jaeger" },
+          "queryType": "search",
+          "service": "api-garage",
+          "limit": 50
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Slowest traces",
+      "type": "table",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "jaeger", "uid": "jaeger" },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Duration" }, "properties": [{ "id": "unit", "value": "µs" }] }
+        ]
+      },
+      "options": {
+        "sortBy": [{ "displayName": "Duration", "desc": true }]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "jaeger", "uid": "jaeger" },
+          "queryType": "search",
+          "service": "api-garage",
+          "limit": 50
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Traces with errors",
+      "type": "table",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 14 },
+      "datasource": { "type": "jaeger", "uid": "jaeger" },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Duration" }, "properties": [{ "id": "unit", "value": "µs" }] }
+        ]
+      },
+      "options": {
+        "sortBy": [{ "displayName": "Start time", "desc": true }]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "jaeger", "uid": "jaeger" },
+          "queryType": "search",
+          "service": "api-garage",
+          "tags": "error=true",
+          "limit": 50
+        }
+      ]
+    }
+  ]
+}

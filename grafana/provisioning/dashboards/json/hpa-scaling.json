@@ -1,0 +1,180 @@
+{
+  "title": "API Garage - HPA Scaling",
+  "uid": "api-garage-hpa-scaling",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "timezone": "browser",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "refresh": "10s",
+  "tags": ["api-garage", "kubernetes", "hpa", "autoscaling"],
+  "panels": [
+    { "id": 100, "type": "row", "title": "Overview", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 } },
+    {
+      "id": 1,
+      "title": "Current replicas",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler=\"api-garage\", namespace=\"garage\"}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Desired replicas",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler=\"api-garage\", namespace=\"garage\"}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Min replicas",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler=\"api-garage\", namespace=\"garage\"}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Max replicas",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler=\"api-garage\", namespace=\"garage\"}"
+        }
+      ]
+    },
+    { "id": 101, "type": "row", "title": "Escala ao longo do tempo", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 } },
+    {
+      "id": 5,
+      "title": "Replicas: atual vs desejada (HPA)",
+      "type": "timeseries",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "decimals": 0, "custom": { "lineWidth": 2, "fillOpacity": 5 } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "min" },
+            "properties": [{ "id": "custom.lineStyle", "value": { "dash": [10, 10] } }, { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "max" },
+            "properties": [{ "id": "custom.lineStyle", "value": { "dash": [10, 10] } }, { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "atual" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "desejada" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "atual",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler=\"api-garage\", namespace=\"garage\"}"
+        },
+        {
+          "refId": "B",
+          "legendFormat": "desejada",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_horizontalpodautoscaler_status_desired_replicas{horizontalpodautoscaler=\"api-garage\", namespace=\"garage\"}"
+        },
+        {
+          "refId": "C",
+          "legendFormat": "min",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_horizontalpodautoscaler_spec_min_replicas{horizontalpodautoscaler=\"api-garage\", namespace=\"garage\"}"
+        },
+        {
+          "refId": "D",
+          "legendFormat": "max",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler=\"api-garage\", namespace=\"garage\"}"
+        }
+      ]
+    },
+    { "id": 102, "type": "row", "title": "Deployment", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 } },
+    {
+      "id": 6,
+      "title": "Pods do Deployment (total / prontos / disponíveis)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0, "custom": { "lineWidth": 2, "fillOpacity": 10 } }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "total",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_deployment_status_replicas{deployment=\"api-garage\", namespace=\"garage\"}"
+        },
+        {
+          "refId": "B",
+          "legendFormat": "prontos",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_deployment_status_replicas_ready{deployment=\"api-garage\", namespace=\"garage\"}"
+        },
+        {
+          "refId": "C",
+          "legendFormat": "disponíveis",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_deployment_status_replicas_available{deployment=\"api-garage\", namespace=\"garage\"}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Condições do HPA",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "decimals": 0, "min": 0, "max": 1, "custom": { "lineWidth": 2, "fillOpacity": 10, "stepMode": true } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "legendFormat": "{{condition}}",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "kube_horizontalpodautoscaler_status_condition{horizontalpodautoscaler=\"api-garage\", namespace=\"garage\", status=\"true\"}"
+        }
+      ]
+    }
+  ]
+}

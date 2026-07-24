@@ -1,0 +1,18 @@
+FROM myoung34/github-runner:latest
+
+USER root
+
+RUN apt-get update && \
+    apt-get install -y default-jdk curl docker.io containerd && \
+    curl -k -LO "https://dl.k8s.io/release/$(curl -k -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
+    rm kubectl && \
+    curl -k -fsSL -o helm.tar.gz https://get.helm.sh/helm-v3.16.2-linux-amd64.tar.gz && \
+    tar -zxf helm.tar.gz && \
+    install -o root -g root -m 0755 linux-amd64/helm /usr/local/bin/helm && \
+    rm -rf helm.tar.gz linux-amd64 && \
+    curl -k -fsSL -o maven.tar.gz https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz && \
+    tar -zxf maven.tar.gz -C /opt && \
+    ln -s /opt/apache-maven-3.9.9/bin/mvn /usr/local/bin/mvn && \
+    rm -f maven.tar.gz && \
+    rm -rf /var/lib/apt/lists/*
