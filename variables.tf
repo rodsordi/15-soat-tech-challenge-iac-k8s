@@ -1,26 +1,42 @@
-variable "github_pat" {
-  type      = string
-  sensitive = true
-}
-
-variable "sonar_admin_password" {
-  type      = string
-  sensitive = true
-}
-
-variable "owasp_cache_host_path" {
+variable "aws_region" {
   type        = string
-  description = "OWASP cache host path for the Persistent Volume Claim (PVC)."
+  description = "AWS region for infrastructure deployment"
+  default     = "us-east-1"
 }
 
-variable "sonar_data_host_path" {
+variable "aws_profile" {
   type        = string
-  description = "Host path where SonarQube data (users, password, tokens) is persisted between pod restarts."
+  description = "AWS CLI profile name configured in ~/.aws/credentials"
+  default     = "default"
 }
 
-variable "NVD_API_KEY" {
+variable "cluster_name" {
+  type        = string
+  description = "Name of the AWS EKS cluster"
+  default     = "techchallenge-cluster"
+}
+
+variable "node_instance_type" {
+  type        = string
+  description = "Instance type for EKS worker nodes"
+  default     = "t3.small"
+}
+
+variable "db_host" {
+  type        = string
+  description = "AWS RDS Endpoint address"
+  default     = "garage-postgres-db.c1234567890.us-east-1.rds.amazonaws.com"
+}
+
+variable "db_password" {
   type        = string
   sensitive   = true
-  description = "NVD API key for accessing the National Vulnerability Database (NVD) API."
-  default     = ""
+  description = "AWS RDS Master Password"
+  default     = "Postgres2026!"
+}
+
+variable "use_existing_lab_role" {
+  type        = bool
+  description = "Use existing AWS Academy LabRole instead of creating new IAM roles"
+  default     = true
 }

@@ -40,6 +40,5 @@ terraform.rc
 # End of https://www.toptal.com/developers/gitignore/api/terraform
 
 .sonar_token
-.terraform.lock.hcl
 cluster-local-dev-config
 *.tar
