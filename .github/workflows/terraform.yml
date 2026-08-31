@@ -71,9 +71,10 @@ jobs:
         run: terraform plan -no-color
 
       - name: Terraform Apply
-        if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+        if: ((github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
         run: terraform apply -auto-approve -no-color
 
       - name: Terraform Destroy
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
         run: terraform destroy -auto-approve -no-color
+
