@@ -21,6 +21,7 @@ variable "security_group_ids" {
 
 variable "integration_uri" {
   type        = string
-  description = "HTTP Integration Target URI"
-  default     = "http://api-garage.garage.svc.cluster.local:8080"
+  description = "HTTP Integration Target URI pointing to internal NLB listener or endpoint"
+  default     = "http://internal-techchallenge-nlb.elb.us-east-1.amazonaws.com:8080/{proxy}"
 }
+

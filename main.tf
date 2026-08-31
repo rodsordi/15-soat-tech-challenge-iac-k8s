@@ -43,6 +43,15 @@ module "app_garage" {
   depends_on = [module.eks_cluster, helm_release.metrics_server]
 }
 
+module "keycloak" {
+  source         = "./modules/keycloak"
+  namespace_name = kubernetes_namespace.garage.metadata[0].name
+  db_host        = var.db_host
+  db_password    = var.db_password
+
+  depends_on = [module.eks_cluster]
+}
+
 module "api_gateway" {
   source             = "./modules/api-gateway"
   cluster_name       = var.cluster_name
@@ -50,5 +59,6 @@ module "api_gateway" {
   subnet_ids         = module.eks_cluster.public_subnet_ids
   security_group_ids = [module.eks_cluster.vpc_link_security_group_id]
 
-  depends_on = [module.eks_cluster, module.app_garage]
+  depends_on = [module.eks_cluster, module.app_garage, module.keycloak]
 }
+

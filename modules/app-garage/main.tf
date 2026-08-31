@@ -151,11 +151,17 @@ resource "kubernetes_horizontal_pod_autoscaler_v2" "garage_api_hpa" {
   }
 }
 
-# Restricted internal ClusterIP Service (No direct public port access)
+# Internal Network Load Balancer Service for AWS API Gateway VPC Link Integration
 resource "kubernetes_service" "garage_api" {
   metadata {
     name      = "api-garage"
     namespace = var.namespace_name
+    annotations = {
+      "service.beta.kubernetes.io/aws-load-balancer-type"            = "nlb"
+      "service.beta.kubernetes.io/aws-load-balancer-internal"        = "true"
+      "service.beta.kubernetes.io/aws-load-balancer-scheme"          = "internal"
+      "service.beta.kubernetes.io/aws-load-balancer-nlb-target-type" = "instance"
+    }
   }
 
   lifecycle {
@@ -168,39 +174,13 @@ resource "kubernetes_service" "garage_api" {
     }
 
     port {
+      name        = "http"
       port        = 8080
       target_port = 8080
+      protocol    = "TCP"
     }
 
-    type = "ClusterIP"
+    type = "LoadBalancer"
   }
 }
 
-# Kubernetes Ingress Resource
-resource "kubernetes_ingress_v1" "garage_api_ingress" {
-  metadata {
-    name      = "api-garage-ingress"
-    namespace = var.namespace_name
-  }
-
-  spec {
-    ingress_class_name = var.ingress_class_name
-
-    rule {
-      http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-          backend {
-            service {
-              name = kubernetes_service.garage_api.metadata[0].name
-              port {
-                number = 8080
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}

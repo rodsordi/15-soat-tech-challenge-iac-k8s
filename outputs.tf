@@ -22,3 +22,20 @@ output "api_gateway_url" {
   description = "AWS API Gateway Public Invoke URL (Single Entry Point)"
   value       = module.api_gateway.api_gateway_url
 }
+
+output "aws_region" {
+  description = "AWS Region where cluster is deployed"
+  value       = var.aws_region
+}
+
+output "keycloak_internal_url" {
+  description = "Internal Keycloak URL for intra-cluster communication and VPC workloads"
+  value       = module.keycloak.keycloak_internal_url
+}
+
+output "keycloak_service_name" {
+  description = "Keycloak internal Kubernetes service name"
+  value       = module.keycloak.service_name
+}
+
+
