@@ -1,42 +1,66 @@
-# 🚀 IaC EKS & Java Application (`15-soat-tech-challenge-iac-k8s`)
+# 🚀 Passo 1: Infraestrutura Base, EKS & API Gateway (`15-soat-tech-challenge-iac-k8s`)
 
-Este repositório contém o código Terraform modularizado para provisionamento do cluster **AWS EKS**, infraestrutura de rede segura, **AWS API Gateway**, **AWS ECR** e implantação da **Aplicação Java (`api-garage`)**.
-
----
-
-## 🏛️ Arquitetura de Rede e Segurança
-
-```
-Usuário (Internet) ➔ AWS API Gateway (HTTP) ➔ VPC Link ➔ EKS Ingress ➔ Serviço ClusterIP ➔ Pod Java (Subnet Privada) ➔ AWS RDS PostgreSQL
-```
-
-- **Ponto Único de Entrada**: AWS API Gateway público via VPC Link.
-- **Isolamento de Nós**: Nós do EKS executados exclusivamente em **Subnets Privadas**.
-- **Restrição de Portas**: Serviço Kubernetes configurado como `ClusterIP` (sem portas públicas no Pod).
-- **ServiceAccount & IRSA**: Autenticação via IAM Roles for Service Accounts (`api-garage-sa`).
-- **Autoscaling (HPA)**: Mapeado autoscale de 2 a 5 pods por utilização de CPU (70%).
+Este repositório é o **primeiro passo obrigatório** na esteira de provisionamento da infraestrutura do Tech Challenge na AWS. Ele é responsável por criar toda a fundação de rede, segurança, cluster Kubernetes gerenciado, repositório de contêineres e o ponto único de entrada via API Gateway.
 
 ---
 
-## 🎓 Conexão no AWS Learner Lab (AWS Academy)
+## 🗺️ Visão Geral da Arquitetura
 
-Este projeto foi preparado para rodar no ambiente **AWS Academy Learner Lab**. Devido às restrições de permissão e tempo de sessão do laboratório, observe os seguintes requisitos:
+```mermaid
+graph TD
+    Client([Cliente / Navegador]) -->|HTTPS| ApiGw[AWS API Gateway HTTP API]
+    ApiGw -->|VPC Link| NLB[AWS NLB Interno]
+    NLB -->|Port 8080| AppService[Service api-garage]
+    AppService --> AppPods[Pods Java Spring Boot]
+    AppPods -->|JPA/JDBC| RDS[(AWS RDS PostgreSQL)]
+    
+    Lambda([Auth Lambda]) -->|VPC Private Subnet| Keycloak[Service Keycloak ClusterIP]
+    Keycloak --> RDS
+    
+    subgraph VPC [AWS VPC Multi-AZ 10.0.0.0/16]
+        subgraph PublicSubnets [Subnets Públicas]
+            ApiGw
+            NAT[NAT Gateway]
+        end
+        subgraph PrivateSubnets [Subnets Privadas]
+            AppPods
+            Keycloak
+            RDS
+        end
+    end
+```
 
-### 1. Obtenção das Credenciais Temporárias
-Toda vez que uma nova sessão do laboratório é iniciada (*Start Lab*), as credenciais temporárias mudam.
-1. No console do AWS Learner Lab, clique em **Start Lab** (aguarde o indicador ficar verde).
-2. Clique no botão **AWS Details** e selecione **AWS CLI** (link *Show*).
-3. Copie as variáveis `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` e `AWS_SESSION_TOKEN`.
+---
 
-### 2. Exportação no Terminal Local
-- **PowerShell (Windows)**:
+## 📋 Ordem Global de Execução dos Projetos
+
+Para evitar erros de dependência e recursos ausentes na AWS, siga rigorosamente esta sequência:
+
+1. **`15-soat-tech-challenge-iac-k8s` (Este Repositório)**: Cria VPC, Subnets, NAT GW, EKS, Keycloak e API Gateway.
+2. **`15-soat-tech-challenge-iac-db`**: Descobre a VPC criada aqui, provisiona o RDS PostgreSQL e a stack de Observabilidade.
+3. **`15-soat-tech-challenge-lamda`**: Conecta na VPC criada aqui e expõe a Function URL para cadastro, consulta e autenticação.
+
+---
+
+## 🎓 Passo a Passo: Preparação no AWS Learner Lab
+
+O projeto foi 100% calibrado para operar dentro dos limites do **AWS Academy Learner Lab**.
+
+### 1. Obter Credenciais da Sessão
+Toda vez que você inicia o laboratório (*Start Lab*), novas credenciais temporárias são geradas:
+1. No console do AWS Academy, clique em **Start Lab** e aguarde o círculo ficar **verde**.
+2. Clique no botão **AWS Details** e selecione o link **AWS CLI** (*Show*).
+3. Copie as credenciais fornecidas.
+
+### 2. Configurar o Terminal Local
+* **No Windows (PowerShell)**:
   ```powershell
   $env:AWS_ACCESS_KEY_ID="COPIE_SUA_KEY"
   $env:AWS_SECRET_ACCESS_KEY="COPIE_SUA_SECRET"
   $env:AWS_SESSION_TOKEN="COPIE_SEU_TOKEN"
   $env:AWS_DEFAULT_REGION="us-east-1"
   ```
-- **Bash / Linux / macOS**:
+* **No Linux / macOS (Bash)**:
   ```bash
   export AWS_ACCESS_KEY_ID="COPIE_SUA_KEY"
   export AWS_SECRET_ACCESS_KEY="COPIE_SUA_SECRET"
@@ -44,68 +68,81 @@ Toda vez que uma nova sessão do laboratório é iniciada (*Start Lab*), as cred
   export AWS_DEFAULT_REGION="us-east-1"
   ```
 
-### 3. Restrição de IAM (`LabRole`)
-- No Learner Lab, **não é permitido criar novas IAM Roles** (erro `AccessDenied`).
-- Por padrão, a variável `use_existing_lab_role = true` reutiliza a IAM Role pré-criada `LabRole`. **Mantenha esta variável ativada (`true`)**.
+### 3. Validar Conexão
+```bash
+aws sts get-caller-identity
+```
 
 ---
 
-## 🛠️ Módulos do Terraform (`modules/`)
+## ⚙️ Execução do Terraform
 
-| Módulo | Descrição |
-| :--- | :--- |
-| **`modules/eks-cluster`** | VPC Multi-AZ, Subnets Públicas/Privadas, NAT Gateway, Roles do IAM (AWS Academy `LabRole`) e EKS Managed Node Group (`t3.small`). |
-| **`modules/api-gateway`** | HTTP API Gateway com VPC Link roteando solicitações públicas para o cluster interno. |
-| **`modules/ecr`** | Repositório AWS ECR (`garage-api`) para armazenamento das imagens Docker com scan-on-push ativo. |
-| **`modules/app-garage`** | Deployment Spring Boot, ServiceAccount com IRSA, Kubernetes Secret para DB, HPA e Ingress. |
-
----
-
-## ⚙️ Execução Local do Terraform
+Dentro da pasta do projeto `15-soat-tech-challenge-iac-k8s`:
 
 ```bash
+# 1. Inicializar plugins e módulos
 terraform init
-terraform plan -var-file="terraform.tfvars.example"
+
+# 2. Validar sintaxe dos arquivos
+terraform validate
+
+# 3. Planejar as alterações
+terraform plan
+
+# 4. Aplicar e provisionar na AWS
 terraform apply -auto-approve
 ```
 
-### 🔌 Conectando ao Cluster EKS após o `apply`
+> [!NOTE]
+> O provisionamento do cluster EKS gerenciado pela AWS leva em média de **10 a 14 minutos**.
 
-Após o `terraform apply`, atualize seu `kubeconfig` local para interagir com o EKS via `kubectl`:
+---
+
+## 🔌 Conexão e Validação do Kubernetes
+
+Após a conclusão do `terraform apply`, atualize seu arquivo `~/.kube/config` para operar o cluster via `kubectl`:
 
 ```bash
-# Método 1: via AWS CLI
 aws eks update-kubeconfig --region us-east-1 --name techchallenge-cluster
-
-# Método 2: via script auxiliar do repositório
-source use-kubeconfig.sh
 ```
 
-Verifique se a conexão está funcionando:
+### Verificar o Cluster:
 ```bash
+# Verificar nós de trabalho (devem aparecer 2 nós t3.small Ready)
 kubectl get nodes
-kubectl get pods -n garage
+
+# Verificar pods do sistema e das aplicações
+kubectl get pods -A
 ```
 
----
-
-## 🤖 Automação via GitHub Actions
-
-O repositório inclui a pipeline automatizada `.github/workflows/terraform.yml`. Configure as seguintes **Repository Secrets**:
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `AWS_SESSION_TOKEN` *(Necessário renovar no GitHub Secrets a cada nova sessão do Learner Lab)*
-- `AWS_REGION` (`us-east-1`)
-- `DB_HOST` (Endpoint do RDS criado no `iac-db`)
-- `DB_PASSWORD` (Senha do banco PostgreSQL)
+### 💡 O que esperar dos Pods após o Passo 1:
+* **`metrics-server`, `coredns`, `kube-proxy`, `aws-node`**: Devem estar com status `Running`.
+* **`api-garage`**: Estará com status `ImagePullBackOff` pois a imagem Docker ainda não foi construída e publicada no ECR (feita pela pipeline de CI/CD da aplicação).
+* **`keycloak`**: Ficará reiniciando temporariamente até o banco de dados PostgreSQL ser criado no **Passo 2**.
 
 ---
 
-## ⚠️ Preservação do Orçamento do Laboratório (Budget)
+## 🛠️ Detalhes dos Módulos Provisionados
 
-> [!CAUTION]
-> **ATENÇÃO AO ORÇAMENTO DO LEARNER LAB**:
-> - O encerramento do timer da sessão do Learner Lab desliga instâncias EC2, **mas NÃO encerra clusters EKS ou NAT Gateways**. Eles continuarão consumindo seu orçamento de US$ 50/100.
-> - Se o orçamento atingir 100%, sua conta AWS do laboratório será **desativada permanentemente** e todo o progresso será perdido.
-> - Sempre execute `terraform destroy -auto-approve` ao finalizar os testes do dia.
+| Módulo | Recursos Criados |
+| :--- | :--- |
+| **`modules/eks-cluster`** | VPC `10.0.0.0/16`, 2 Subnets Públicas, 2 Subnets Privadas, Internet Gateway, NAT Gateway, EKS Cluster Kubernetes 1.29 e Node Group com 2 nós `t3.small` (utiliza a `LabRole` obrigatória). |
+| **`modules/ecr`** | Repositório AWS ECR `garage-api` para armazenamento de imagens de contêiner com varredura de vulnerabilidades. |
+| **`modules/keycloak`** | Deployment do Keycloak 24, Secret com credenciais administrativas e Service interno ClusterIP (`http://keycloak.garage.svc.cluster.local:8080`). |
+| **`modules/app-garage`** | Deployment Spring Boot, ServiceAccount com IRSA, Service LoadBalancer (com anotações de **NLB Interno** da AWS) e HPA de 2 a 5 réplicas. |
+| **`modules/api-gateway`** | AWS API Gateway HTTP API v2 com integração via VPC Link para o Listener do NLB interno descoberto dinamicamente. |
 
+---
+
+## ⚠️ Troubleshooting & Dicas do Learner Lab
+
+1. **Erro `policy/voc-cancel-cred`**:
+   * **Causa**: O timer da sessão no navegador atingiu o limite ou a aba do laboratório foi pausada.
+   * **Solução**: Volte ao painel do AWS Academy, clique em **Start Lab** novamente e atualize suas credenciais locais no terminal.
+2. **Erro `Too many pods`**:
+   * Uma instância `t3.small` na AWS suporta até 11 pods. Por esse motivo, o Node Group está configurado com `desired_size = 2` (capacidade total de 22 pods).
+3. **Preservação de Créditos ao final do dia**:
+   * Ao finalizar o uso, desmonte os recursos na ordem inversa para não consumir seu orçamento de US$ 50/100:
+     1. Destrua a Lambda (`15-soat-tech-challenge-lamda`)
+     2. Destrua o Banco (`15-soat-tech-challenge-iac-db`)
+     3. Destrua o EKS (`15-soat-tech-challenge-iac-k8s`) via `terraform destroy -auto-approve`
