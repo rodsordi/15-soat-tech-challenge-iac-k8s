@@ -1,14 +1,27 @@
 {
-  "name": "API Garage - Ordens de Serviço & Negócio",
-  "description": "Monitoramento executivo de Ordens de Serviço, tempo médio por status e SLAs",
+  "name": "API Garage - Painel Executivo de Negocios & SLAs",
+  "description": "Monitoramento executivo de Ordens de Servico, Clientes, Veiculos, Estoque, Notificacoes AWS e SLAs",
   "permissions": "PUBLIC_READ_WRITE",
+  "variables": [
+    {
+      "name": "business_uri",
+      "title": "Rota Operacional (URI)",
+      "type": "NRQL",
+      "isMultiSelection": false,
+      "replacementStrategy": "DEFAULT",
+      "nrqlQuery": {
+        "accountIds": [${account_id}],
+        "query": "FROM Metric SELECT uniques(uri) WHERE metricName = 'http.server.requests' AND uri NOT LIKE '%actuator%'"
+      }
+    }
+  ],
   "pages": [
     {
-      "name": "Work Orders & SLAs",
+      "name": "Work Orders & SLAs Executivos",
       "widgets": [
         {
-          "title": "Volume de Ordens de Serviço Criadas (24h)",
-          "layout": { "column": 1, "row": 1, "width": 6, "height": 3 },
+          "title": "Volume de Ordens de Servico Criadas (24h)",
+          "layout": { "column": 1, "row": 1, "width": 3, "height": 3 },
           "visualization": { "id": "viz.billboard" },
           "rawConfiguration": {
             "nrqlQueries": [
@@ -20,8 +33,47 @@
           }
         },
         {
-          "title": "Distribuição de Requisições por Rota de Ordem de Serviço",
-          "layout": { "column": 7, "row": 1, "width": 6, "height": 3 },
+          "title": "Transicoes de Status de OS (24h)",
+          "layout": { "column": 4, "row": 1, "width": 3, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Atualizacoes de Status' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/work-orders/{workOrderId}' AND method = 'PATCH' SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Taxa de Sucesso no Ciclo de OS (%)",
+          "layout": { "column": 7, "row": 1, "width": 3, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT percentage(count(*), WHERE status LIKE '2%' OR status LIKE '3%') AS 'Taxa de Sucesso (%)' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Falhas e Excecoes em OS (24h)",
+          "layout": { "column": 10, "row": 1, "width": 3, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Erros em OS' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' AND (status LIKE '4%' OR status LIKE '5%') SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Distribuicao de Requisicoes por Rota de OS",
+          "layout": { "column": 1, "row": 4, "width": 5, "height": 4 },
           "visualization": { "id": "viz.pie" },
           "rawConfiguration": {
             "nrqlQueries": [
@@ -33,27 +85,175 @@
           }
         },
         {
-          "title": "Tempo Médio de Execução por Rota de Work Order (ms)",
-          "layout": { "column": 1, "row": 4, "width": 8, "height": 4 },
+          "title": "Tempo Medio de Execucao por Rota de Work Order (ms)",
+          "layout": { "column": 6, "row": 4, "width": 7, "height": 4 },
           "visualization": { "id": "viz.line" },
           "rawConfiguration": {
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT average(http.server.requests) * 1000 AS 'Tempo Médio (ms)' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' FACET uri TIMESERIES SINCE 24 hours ago"
+                "query": "SELECT average(http.server.requests) * 1000 AS 'Tempo Medio (ms)' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' FACET uri TIMESERIES SINCE 24 hours ago"
               }
             ]
           }
         },
         {
-          "title": "Taxa de Sucesso vs Falha no Processamento de OS (%)",
-          "layout": { "column": 9, "row": 4, "width": 4, "height": 4 },
+          "title": "Throughput Operacional de Ordens por Minuto",
+          "layout": { "column": 1, "row": 8, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.area" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT rate(count(*), 1 minute) AS 'Reqs / Min' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' TIMESERIES SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Auditoria de Operacoes Recentes em Ordens de Servico",
+          "layout": { "column": 7, "row": 8, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.table" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Total Chamadas', latest(status) AS 'Ultimo Status', latest(outcome) AS 'Resultado' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' FACET uri, method SINCE 24 hours ago"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Operacoes de Oficina, Estoque & Cloud",
+      "widgets": [
+        {
+          "title": "Novos Clientes Cadastrados (24h)",
+          "layout": { "column": 1, "row": 1, "width": 2, "height": 3 },
           "visualization": { "id": "viz.billboard" },
           "rawConfiguration": {
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT percentage(count(*), WHERE status LIKE '2%' OR status LIKE '3%') AS 'Taxa de Sucesso (%)' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Clientes' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/customers' AND method = 'POST' AND status = '201' SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Novos Veiculos Vinculados (24h)",
+          "layout": { "column": 3, "row": 1, "width": 2, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Veiculos' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/vehicles%' AND method = 'POST' AND status = '201' SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Pecas / Materiais em Estoque (24h)",
+          "layout": { "column": 5, "row": 1, "width": 2, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Pecas Cadastradas' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/inventory-materials' AND method = 'POST' AND status = '201' SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Servicos no Catalogo (24h)",
+          "layout": { "column": 7, "row": 1, "width": 2, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Servicos' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/services' AND method = 'POST' AND status = '201' SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Notificacoes AWS SQS (24h)",
+          "layout": { "column": 9, "row": 1, "width": 2, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Notificacoes' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/notifications' SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Logins & Autenticacoes (24h)",
+          "layout": { "column": 11, "row": 1, "width": 2, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Logins JWT' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/auth/login' AND status = '200' SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Distribuicao de Volume por Entidade da Oficina",
+          "layout": { "column": 1, "row": 4, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.bar" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Requisicoes' FROM Metric WHERE metricName = 'http.server.requests' AND uri NOT LIKE '%actuator%' FACET uri SINCE 24 hours ago LIMIT 10"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Auditoria da Rotina de Calculo de SLAs (Tempo Medio de Servicos)",
+          "layout": { "column": 7, "row": 4, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.table" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Execucoes', latest(status) AS 'Status HTTP', latest(outcome) AS 'Resultado' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/services/calculateAverageTime' SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Pool HikariCP: Conexoes Ativas vs Ociosas ao Longo do Tempo",
+          "layout": { "column": 1, "row": 8, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.line" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(hikaricp.connections.active) AS 'Ativas', average(hikaricp.connections.idle) AS 'Ociosas' FROM Metric WHERE metricName LIKE 'hikaricp.connections%' TIMESERIES SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Tempo Medio e p95 de Aquisicao de Conexao com o Banco (ms)",
+          "layout": { "column": 7, "row": 8, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.line" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(hikaricp.connections.acquire * 1000) AS 'Tempo Medio (ms)', percentile(hikaricp.connections.acquire * 1000, 95) AS 'p95 (ms)' FROM Metric WHERE metricName = 'hikaricp.connections.acquire' TIMESERIES SINCE 24 hours ago"
               }
             ]
           }
