@@ -78,6 +78,12 @@ graph TD
 > **POLÍTICA DE GOVERNANÇA DE DEVSECOPS: PROIBIDO APPLY MANUAL VIA PROMPT LOCAL**
 > Para garantir rastreabilidade, auditoria, consistência de estado e conformidade de segurança, **nenhum membro da equipe deve executar `terraform apply` a partir do terminal local**. Todos os provisionamentos, alterações de infraestrutura e destituições devem ser executados exclusivamente através da **Pipeline de CI/CD do GitHub Actions**.
 
+> [!CAUTION]
+> **DIRETRIZ MANDATÓRIA DE SEGURANÇA: NUNCA MAPEAR DADOS SENSÍVEIS NO CÓDIGO FONTE**
+> É **estritamente proibido** versionar senhas, tokens, API Keys, License Keys ou credenciais em qualquer arquivo de código fonte (`.tf`, `.tfvars`, `.yaml`, `.json`, `.properties`, `.env` ou scripts).
+> Todos os segredos e dados sensíveis **devem ser obrigatoriamente configurados nos Segredos da Pipeline (GitHub Actions Secrets)** e injetados de forma dinâmica e segura em tempo de execução.
+
+
 ---
 
 ### 4.1. Configuração de Credenciais no GitHub Actions
