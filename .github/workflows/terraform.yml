@@ -4,11 +4,9 @@ on:
   push:
     branches:
       - develop
-  pull_request:
-    branches:
-      - develop
 
   workflow_dispatch:
+
     inputs:
       action:
         description: 'Terraform action to execute'
@@ -72,8 +70,9 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.action == 'plan')
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'plan'
         run: terraform plan -no-color
+
 
       - name: Terraform Apply
         if: (github.ref == 'refs/heads/develop' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')

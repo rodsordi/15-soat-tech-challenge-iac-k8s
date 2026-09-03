@@ -128,9 +128,10 @@ Você pode disparar qualquer ação (`plan`, `apply` ou `destroy`) diretamente p
    gh run watch
    ```
 
-#### Opção B: Ciclo Automatizado de GitOps (Pull Request & Merge)
-* **Pull Request (PR)** para `develop`: Executa automaticamente `terraform fmt -check`, `terraform init`, `terraform validate` e `terraform plan`.
-* **Merge na branch `develop`**: Executa automaticamente o `terraform apply -auto-approve`, aplicando as alterações no cluster EKS.
+#### Opção B: Ciclo Automatizado de GitOps (Merge na `develop`)
+* **Branch `feature/*` e Pull Requests**: O Terraform **não é executado** em branches de feature ou durante a abertura de PRs, evitando execuções desnecessárias ou falhas por ausência de credenciais temporárias do laboratório.
+* **Merge na branch `develop`**: O pipeline é disparado automaticamente e executa o `terraform apply -auto-approve` no cluster EKS.
+
 
 
 ---
