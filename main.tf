@@ -33,15 +33,27 @@ resource "kubernetes_namespace" "garage" {
 }
 
 module "app_garage" {
-  source         = "./modules/app-garage"
-  namespace_name = kubernetes_namespace.garage.metadata[0].name
-  image_url      = "${module.ecr.repository_url}:latest"
-  db_host        = var.db_host
-  db_password    = var.db_password
-  irsa_role_arn  = module.eks_cluster.irsa_role_arn
+  source               = "./modules/app-garage"
+  namespace_name       = kubernetes_namespace.garage.metadata[0].name
+  image_url            = "${module.ecr.repository_url}:latest"
+  db_host              = var.db_host
+  db_password          = var.db_password
+  irsa_role_arn        = module.eks_cluster.irsa_role_arn
+  newrelic_license_key = var.newrelic_license_key
 
   depends_on = [module.eks_cluster, helm_release.metrics_server]
 }
+
+# --- NEW RELIC OBSERVABILITY STACK ---
+module "observability_newrelic" {
+  source               = "./modules/observability-newrelic"
+  cluster_name         = var.cluster_name
+  newrelic_account_id  = var.newrelic_account_id
+  newrelic_license_key = var.newrelic_license_key
+
+  depends_on = [module.eks_cluster]
+}
+
 
 module "keycloak" {
   source         = "./modules/keycloak"

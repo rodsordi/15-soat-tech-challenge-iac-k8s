@@ -52,3 +52,11 @@ variable "ingress_class_name" {
   description = "Ingress class name for Kubernetes Ingress"
   default     = "alb"
 }
+
+variable "newrelic_license_key" {
+  type        = string
+  sensitive   = true
+  description = "New Relic Ingest License Key for OpenTelemetry export"
+  default     = ""
+}
+

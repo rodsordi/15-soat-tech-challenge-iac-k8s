@@ -1,0 +1,116 @@
+{
+  "name": "API Garage - Infraestrutura, Latência & Integrações",
+  "description": "Latência de APIs, Integrações Externas e Métricas do Kubernetes Cluster",
+  "permissions": "PUBLIC_READ_WRITE",
+  "pages": [
+    {
+      "name": "Technical Overview",
+      "widgets": [
+        {
+          "title": "Latência das APIs por Rota (p95 e p99)",
+          "layout": { "column": 1, "row": 1, "width": 6, "height": 3 },
+          "visualization": { "id": "viz.line" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT percentile(duration * 1000, 95, 99) FROM Transaction WHERE appName LIKE '%${app_name}%' FACET name TIMESERIES"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Erros e Falhas nas Integrações Externas (PostgreSQL / AWS SQS)",
+          "layout": { "column": 7, "row": 1, "width": 6, "height": 3 },
+          "visualization": { "id": "viz.table" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) FROM TransactionError WHERE appName LIKE '%${app_name}%' FACET error.class, error.message, transactionName SINCE 6 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Consumo de Recursos do Kubernetes (CPU por Pod)",
+          "layout": { "column": 1, "row": 4, "width": 6, "height": 3 },
+          "visualization": { "id": "viz.line" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(cpuUsedCores) FROM K8sContainerSample WHERE namespaceName = 'garage' AND containerName = '${app_name}' FACET podName TIMESERIES"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Consumo de Memória dos Pods (Working Set em MB)",
+          "layout": { "column": 7, "row": 4, "width": 6, "height": 3 },
+          "visualization": { "id": "viz.line" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(memoryWorkingSetBytes / (1024 * 1024)) AS 'Memória Utilizada (MB)' FROM K8sContainerSample WHERE namespaceName = 'garage' AND containerName = '${app_name}' FACET podName TIMESERIES"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Healthchecks & Uptime dos Pods (Disponibilidade %)",
+          "layout": { "column": 1, "row": 7, "width": 6, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT percentage(count(*), WHERE isReady = 1) AS 'Pod Ready Uptime %' FROM K8sPodSample WHERE namespaceName = 'garage' AND podName LIKE '%${app_name}%' SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Logs Estruturados Correlacionados com Erro (Logs in Context)",
+          "layout": { "column": 7, "row": 7, "width": 6, "height": 3 },
+          "visualization": { "id": "viz.table" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT timestamp, message, `trace.id`, `span.id`, level FROM Log WHERE namespaceName = 'garage' AND level IN ('ERROR', 'WARN') SINCE 3 hours ago LIMIT 20"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Keycloak - Consumo de Recursos (CPU e Memória)",
+          "layout": { "column": 1, "row": 10, "width": 6, "height": 3 },
+          "visualization": { "id": "viz.line" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(cpuUsedCores * 1000) AS 'CPU (mCores)', average(memoryWorkingSetBytes / (1024 * 1024)) AS 'Memória (MB)' FROM K8sContainerSample WHERE namespaceName = 'garage' AND containerName = 'keycloak' TIMESERIES"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Keycloak - Uptime & Logs Recentes do Servidor de Autenticação",
+          "layout": { "column": 7, "row": 10, "width": 6, "height": 3 },
+          "visualization": { "id": "viz.table" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT timestamp, message, level FROM Log WHERE namespaceName = 'garage' AND (podName LIKE '%keycloak%' OR message LIKE '%keycloak%') SINCE 3 hours ago LIMIT 20"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
