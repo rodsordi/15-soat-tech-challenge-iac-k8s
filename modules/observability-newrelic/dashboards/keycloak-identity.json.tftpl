@@ -1,0 +1,103 @@
+{
+  "name": "Keycloak - Identity & Authentication Server",
+  "description": "Monitoramento dedicado de autenticacao OIDC, emissao de JWT, performance do Quarkus e seguranca",
+  "permissions": "PUBLIC_READ_WRITE",
+  "pages": [
+    {
+      "name": "Identity & Security Overview",
+      "widgets": [
+        {
+          "title": "Status do Servidor Keycloak (Online / Offline)",
+          "layout": { "column": 1, "row": 1, "width": 3, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT latest(isReady) AS 'Pod Ready (1=Online)' FROM K8sPodSample WHERE namespaceName = 'garage' AND podName LIKE '%keycloak%'"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Total de Tentativas de Login / Autenticacoes (24h)",
+          "layout": { "column": 4, "row": 1, "width": 3, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Eventos de Login' FROM Log WHERE namespaceName = 'garage' AND (message LIKE '%LOGIN%' OR message LIKE '%auth%' OR message LIKE '%token%') SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Falhas de Autenticacao / Invalid Credentials (24h)",
+          "layout": { "column": 7, "row": 1, "width": 3, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Falhas de Login' FROM Log WHERE namespaceName = 'garage' AND (message LIKE '%LOGIN_ERROR%' OR message LIKE '%invalid_grant%' OR message LIKE '%user_not_found%') SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Reinicializacoes do Container Keycloak (24h)",
+          "layout": { "column": 10, "row": 1, "width": 3, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT max(restartCount) - min(restartCount) AS 'Restarts' FROM K8sContainerSample WHERE namespaceName = 'garage' AND containerName = 'keycloak' SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Consumo de Recursos (CPU em mCores & Memoria em MB)",
+          "layout": { "column": 1, "row": 4, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.line" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(cpuUsedCores * 1000) AS 'CPU (mCores)', average(memoryWorkingSetBytes / (1024 * 1024)) AS 'Memoria Usada (MB)' FROM K8sContainerSample WHERE namespaceName = 'garage' AND containerName = 'keycloak' TIMESERIES"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Distribuicao de Severidade dos Logs do Servidor de Identidade",
+          "layout": { "column": 7, "row": 4, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.pie" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) FROM Log WHERE namespaceName = 'garage' AND podName LIKE '%keycloak%' FACET level SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Auditoria de Seguranca & Logs em Tempo Real do Keycloak",
+          "layout": { "column": 1, "row": 8, "width": 12, "height": 5 },
+          "visualization": { "id": "viz.table" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT timestamp, message, level, podName FROM Log WHERE namespaceName = 'garage' AND podName LIKE '%keycloak%' SINCE 3 hours ago LIMIT 50"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

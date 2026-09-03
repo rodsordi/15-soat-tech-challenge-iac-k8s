@@ -131,12 +131,12 @@ resource "kubernetes_deployment" "keycloak" {
 
           resources {
             limits = {
-              cpu    = "500m"
-              memory = "512Mi"
+              cpu    = "1000m"
+              memory = "1024Mi"
             }
             requests = {
-              cpu    = "200m"
-              memory = "384Mi"
+              cpu    = "250m"
+              memory = "512Mi"
             }
           }
 
@@ -145,7 +145,7 @@ resource "kubernetes_deployment" "keycloak" {
               path = "/health/ready"
               port = 8080
             }
-            initial_delay_seconds = 30
+            initial_delay_seconds = 60
             period_seconds        = 10
             timeout_seconds       = 5
           }
@@ -155,11 +155,12 @@ resource "kubernetes_deployment" "keycloak" {
               path = "/health/live"
               port = 8080
             }
-            initial_delay_seconds = 45
+            initial_delay_seconds = 90
             period_seconds        = 15
             timeout_seconds       = 5
           }
         }
+
       }
     }
   }
