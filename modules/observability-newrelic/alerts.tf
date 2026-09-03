@@ -13,7 +13,7 @@ resource "newrelic_nrql_alert_condition" "work_order_failures" {
   violation_time_limit_seconds = 3600
 
   nrql {
-    query = "SELECT percentage(count(*), WHERE numeric(response.status) >= 500) FROM Transaction WHERE request.uri LIKE '%/work-orders%' AND appName LIKE '%api-garage%'"
+    query = "SELECT percentage(count(*), WHERE status LIKE '5%') FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%'"
   }
 
   critical {
@@ -24,7 +24,7 @@ resource "newrelic_nrql_alert_condition" "work_order_failures" {
   }
 }
 
-# 2. Alertas para falhas nas integrações críticas (PostgreSQL e AWS SQS)
+# 2. Alertas para falhas nas integrações críticas (PostgreSQL e AWS SQS via Log de Erro)
 resource "newrelic_nrql_alert_condition" "integration_failures" {
   account_id                   = var.newrelic_account_id
   policy_id                    = newrelic_alert_policy.garage_business_policy.id
@@ -34,7 +34,7 @@ resource "newrelic_nrql_alert_condition" "integration_failures" {
   violation_time_limit_seconds = 3600
 
   nrql {
-    query = "SELECT count(*) FROM TransactionError WHERE appName LIKE '%api-garage%' AND (error.class LIKE '%SQLException%' OR error.class LIKE '%SqsException%' OR error.class LIKE '%Postgres%')"
+    query = "SELECT count(*) FROM Log WHERE (message LIKE '%SQLException%' OR message LIKE '%SqsException%' OR message LIKE '%Postgres%' OR level = 'ERROR') AND (container_name = 'api-garage' OR namespace_name = 'garage')"
   }
 
   critical {
@@ -76,7 +76,7 @@ resource "newrelic_nrql_alert_condition" "api_latency_high" {
   violation_time_limit_seconds = 3600
 
   nrql {
-    query = "SELECT percentile(duration * 1000, 95) FROM Transaction WHERE appName LIKE '%api-garage%'"
+    query = "SELECT percentile(http.server.requests * 1000, 95) FROM Metric WHERE metricName = 'http.server.requests' AND uri NOT LIKE '%actuator%'"
   }
 
   critical {
@@ -139,7 +139,7 @@ resource "newrelic_nrql_alert_condition" "postgres_pool_exhausted" {
   violation_time_limit_seconds = 3600
 
   nrql {
-    query = "SELECT count(*) FROM TransactionError WHERE appName LIKE '%api-garage%' AND (error.class LIKE '%SQLTransientConnectionException%' OR error.message LIKE '%Connection is not available%')"
+    query = "SELECT latest(hikaricp.connections.timeout) FROM Metric WHERE metricName = 'hikaricp.connections.timeout'"
   }
 
   critical {
@@ -150,7 +150,7 @@ resource "newrelic_nrql_alert_condition" "postgres_pool_exhausted" {
   }
 }
 
-# 8. Alerta para Queries Lentas no PostgreSQL (Latência de Banco > 1s)
+# 8. Alerta para Queries Lentas no PostgreSQL (Tempo de Aquisição de Pool > 1s)
 resource "newrelic_nrql_alert_condition" "postgres_slow_queries" {
   account_id                   = var.newrelic_account_id
   policy_id                    = newrelic_alert_policy.garage_business_policy.id
@@ -160,7 +160,7 @@ resource "newrelic_nrql_alert_condition" "postgres_slow_queries" {
   violation_time_limit_seconds = 3600
 
   nrql {
-    query = "SELECT average(databaseDuration * 1000) FROM Transaction WHERE appName LIKE '%api-garage%' AND databaseDuration > 0"
+    query = "SELECT average(hikaricp.connections.acquire * 1000) FROM Metric WHERE metricName = 'hikaricp.connections.acquire'"
   }
 
   critical {
