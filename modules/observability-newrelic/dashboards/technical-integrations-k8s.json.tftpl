@@ -14,7 +14,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT percentile(duration * 1000, 95, 99) FROM Transaction WHERE appName LIKE '%${app_name}%' FACET name TIMESERIES"
+                "query": "SELECT percentile(coalesce(duration.ms, duration * 1000), 95, 99) FROM Span, Transaction WHERE (service.name LIKE '%${app_name}%' OR entity.name LIKE '%${app_name}%' OR appName LIKE '%${app_name}%') FACET name TIMESERIES"
               }
             ]
           }
@@ -27,7 +27,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) FROM TransactionError WHERE appName LIKE '%${app_name}%' FACET error.class, error.message, transactionName SINCE 6 hours ago"
+                "query": "SELECT count(*) FROM Span, TransactionError WHERE (service.name LIKE '%${app_name}%' OR entity.name LIKE '%${app_name}%' OR appName LIKE '%${app_name}%') AND (otel.status_code = 'ERROR' OR error = true) FACET coalesce(error.class, otel.status_description, name) SINCE 6 hours ago"
               }
             ]
           }
@@ -131,7 +131,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT average(databaseDuration * 1000) AS 'Duração Média SQL (ms)', percentile(databaseDuration * 1000, 95) AS 'p95 SQL (ms)' FROM Transaction WHERE appName LIKE '%api-garage%' AND databaseDuration > 0 TIMESERIES"
+                "query": "SELECT average(coalesce(duration.ms, databaseDuration * 1000)) AS 'Duração Média SQL (ms)', percentile(coalesce(duration.ms, databaseDuration * 1000), 95) AS 'p95 SQL (ms)' FROM Span, Transaction WHERE (service.name LIKE '%${app_name}%' OR appName LIKE '%${app_name}%') AND (db.system IS NOT NULL OR databaseDuration > 0) TIMESERIES"
               }
             ]
           }

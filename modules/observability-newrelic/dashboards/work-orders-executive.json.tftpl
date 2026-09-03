@@ -14,33 +14,33 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Ordens Criadas' FROM Transaction WHERE request.uri = '/api/v1/work-orders' AND request.method = 'POST' AND response.status = '201' FACET dateOf(timestamp) SINCE 14 days ago"
+                "query": "SELECT count(*) AS 'Ordens Criadas' FROM Span, Transaction WHERE (name LIKE '%POST%work-orders%' OR http.target = '/api/v1/work-orders' OR request.uri = '/api/v1/work-orders') AND (http.status_code = '201' OR numeric(http.response.status_code) = 201 OR response.status = '201') FACET dateOf(timestamp) SINCE 14 days ago"
               }
             ]
           }
         },
         {
-          "title": "Distribuição Atual de Ordens por Status",
+          "title": "Distribuição de Requisições por Rota de Ordem de Serviço",
           "layout": { "column": 7, "row": 1, "width": 6, "height": 3 },
           "visualization": { "id": "viz.pie" },
           "rawConfiguration": {
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) FROM Transaction WHERE request.uri LIKE '%/work-orders%' AND request.method = 'PATCH' FACET request.parameters.status SINCE 7 days ago"
+                "query": "SELECT count(*) FROM Span, Transaction WHERE (name LIKE '%work-orders%' OR http.target LIKE '%/work-orders%' OR request.uri LIKE '%/work-orders%') FACET coalesce(http.target, request.uri, name) SINCE 7 days ago"
               }
             ]
           }
         },
         {
-          "title": "Tempo Médio de Execução por Status (Diagnóstico, Execução, Finalização)",
+          "title": "Tempo Médio de Execução por Rota de Work Order (ms)",
           "layout": { "column": 1, "row": 4, "width": 8, "height": 4 },
           "visualization": { "id": "viz.line" },
           "rawConfiguration": {
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT average(duration) * 1000 AS 'Tempo Médio (ms)' FROM Transaction WHERE request.uri LIKE '%/work-orders%' FACET request.parameters.status TIMESERIES SINCE 24 hours ago"
+                "query": "SELECT average(coalesce(duration.ms, duration * 1000)) AS 'Tempo Médio (ms)' FROM Span, Transaction WHERE (name LIKE '%work-orders%' OR http.target LIKE '%/work-orders%' OR request.uri LIKE '%/work-orders%') FACET coalesce(http.target, request.uri, name) TIMESERIES SINCE 24 hours ago"
               }
             ]
           }
@@ -53,7 +53,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT percentage(count(*), WHERE numeric(response.status) < 400) AS 'Taxa de Sucesso (%)' FROM Transaction WHERE request.uri LIKE '%/work-orders%' SINCE 24 hours ago"
+                "query": "SELECT percentage(count(*), WHERE otel.status_code != 'ERROR' AND (numeric(coalesce(http.status_code, response.status, 200)) < 400)) AS 'Taxa de Sucesso (%)' FROM Span, Transaction WHERE (name LIKE '%work-orders%' OR http.target LIKE '%/work-orders%' OR request.uri LIKE '%/work-orders%') SINCE 24 hours ago"
               }
             ]
           }
