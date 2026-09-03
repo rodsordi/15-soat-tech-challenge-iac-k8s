@@ -123,6 +123,12 @@ resource "kubernetes_deployment" "keycloak" {
             value = "true"
           }
 
+          env {
+            name  = "KC_METRICS_ENABLED"
+            value = "true"
+          }
+
+
           resources {
             limits = {
               cpu    = "500m"

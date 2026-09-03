@@ -24,6 +24,22 @@ resource "kubernetes_secret" "db_credentials" {
   type = "Opaque"
 }
 
+# --- KUBERNETES SECRET FOR NEW RELIC INGEST CREDENTIALS ---
+resource "kubernetes_secret" "newrelic_credentials" {
+  count = var.newrelic_license_key != "" ? 1 : 0
+
+  metadata {
+    name      = "api-garage-newrelic"
+    namespace = var.namespace_name
+  }
+
+  data = {
+    license = var.newrelic_license_key
+  }
+
+  type = "Opaque"
+}
+
 # --- JAVA APPLICATION (15-soat-tech-challenge-garage) ---
 resource "kubernetes_deployment" "garage_api" {
   wait_for_rollout = false
@@ -89,6 +105,62 @@ resource "kubernetes_deployment" "garage_api" {
               }
             }
           }
+
+          # --- OpenTelemetry & New Relic Ingest Configuration ---
+          env {
+            name  = "OTEL_SERVICE_NAME"
+            value = "api-garage"
+          }
+
+          env {
+            name  = "MANAGEMENT_TRACING_SAMPLING_PROBABILITY"
+            value = "1.0"
+          }
+
+          env {
+            name  = "MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT"
+            value = "https://otlp.nr-data.net:4318/v1/traces"
+          }
+
+          dynamic "env" {
+            for_each = var.newrelic_license_key != "" ? [1] : []
+            content {
+              name = "MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_HEADERS_API_KEY"
+              value_from {
+                secret_key_ref {
+                  name = kubernetes_secret.newrelic_credentials[0].metadata[0].name
+                  key  = "license"
+                }
+              }
+            }
+          }
+
+          env {
+            name  = "MANAGEMENT_OTLP_METRICS_EXPORT_URL"
+            value = "https://otlp.nr-data.net:4318/v1/metrics"
+          }
+
+          dynamic "env" {
+            for_each = var.newrelic_license_key != "" ? [1] : []
+            content {
+              name = "MANAGEMENT_OPENTELEMETRY_METRICS_EXPORT_OTLP_HEADERS_API_KEY"
+              value_from {
+                secret_key_ref {
+                  name = kubernetes_secret.newrelic_credentials[0].metadata[0].name
+                  key  = "license"
+                }
+              }
+            }
+          }
+
+          dynamic "env" {
+            for_each = var.newrelic_license_key != "" ? [1] : []
+            content {
+              name  = "OTEL_EXPORTER_OTLP_HEADERS"
+              value = "api-key=${var.newrelic_license_key}"
+            }
+          }
+
 
           resources {
             limits = {

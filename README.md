@@ -72,60 +72,105 @@ graph TD
 
 ---
 
-## ⚙️ 4. Passos para Execução e Deploy
+## ⚙️ 4. Governança e Execução: Pipeline GitHub Actions (Obrigatório)
 
-### 4.1. Configurar Credenciais da AWS
-No painel do AWS Academy Learner Lab:
-1. Inicie o lab clicando em **Start Lab** (aguarde o status ficar verde).
+> [!IMPORTANT]
+> **POLÍTICA DE GOVERNANÇA DE DEVSECOPS: PROIBIDO APPLY MANUAL VIA PROMPT LOCAL**
+> Para garantir rastreabilidade, auditoria, consistência de estado e conformidade de segurança, **nenhum membro da equipe deve executar `terraform apply` a partir do terminal local**. Todos os provisionamentos, alterações de infraestrutura e destituições devem ser executados exclusivamente através da **Pipeline de CI/CD do GitHub Actions**.
+
+---
+
+### 4.1. Configuração de Credenciais no GitHub Actions
+
+Antes de disparar o pipeline, atualize as credenciais temporárias do **AWS Academy Learner Lab** no GitHub:
+
+1. No painel do **AWS Academy**, inicie o laboratório (*Start Lab*).
 2. Clique em **AWS Details** ➔ **AWS CLI** (*Show*) e copie os valores.
-3. Exporte no seu terminal:
+3. Atualize os **Secrets** do repositório no GitHub (*Settings > Secrets and variables > Actions*):
+   * `AWS_ACCESS_KEY_ID`: Sua Access Key do laboratório.
+   * `AWS_SECRET_ACCESS_KEY`: Sua Secret Key do laboratório.
+   * `AWS_SESSION_TOKEN`: Seu Session Token temporário.
+   * `DB_PASSWORD`: Senha mestra do banco de dados RDS.
+   * `NEWRELIC_LICENSE_KEY`: Ingest License Key do New Relic.
+   * `NEWRELIC_API_KEY`: User API Key do New Relic.
 
-* **Windows (PowerShell)**:
-  ```powershell
-  $env:AWS_ACCESS_KEY_ID="COPIE_SUA_KEY"
-  $env:AWS_SECRET_ACCESS_KEY="COPIE_SUA_SECRET"
-  $env:AWS_SESSION_TOKEN="COPIE_SEU_TOKEN"
-  $env:AWS_DEFAULT_REGION="us-east-1"
-  ```
-* **Linux / macOS (Bash)**:
-  ```bash
-  export AWS_ACCESS_KEY_ID="COPIE_SUA_KEY"
-  export AWS_SECRET_ACCESS_KEY="COPIE_SUA_SECRET"
-  export AWS_SESSION_TOKEN="COPIE_SEU_TOKEN"
-  export AWS_DEFAULT_REGION="us-east-1"
-  ```
+> 💡 **Dica de Produtividade**: Você também pode atualizar as credenciais AWS via GitHub CLI no seu terminal:
+> ```bash
+> gh secret set AWS_ACCESS_KEY_ID --body "SUA_KEY"
+> gh secret set AWS_SECRET_ACCESS_KEY --body "SUA_SECRET"
+> gh secret set AWS_SESSION_TOKEN --body "SEU_TOKEN"
+> ```
 
-### 4.2. Provisionar com o Terraform
-Dentro da pasta `15-soat-tech-challenge-iac-k8s`:
+---
+
+### 4.2. Como Disparar o Deploy via GitHub Actions
+
+#### Opção A: Execução Manual Controlada (Recomendado para Avaliações)
+Você pode disparar qualquer ação (`plan`, `apply` ou `destroy`) diretamente pelo GitHub:
+
+1. **Via Interface Web**:
+   - Acesse a aba **Actions** do repositório no GitHub.
+   - Selecione o workflow **Terraform EKS & App CI/CD Pipeline**.
+   - Clique em **Run workflow**, selecione a branch `develop` e escolha a ação desejada:
+     - `apply`: Provisiona e atualiza toda a infraestrutura, workloads e observabilidade.
+     - `plan`: Executa validação e gera o plano de execução sem alterar a nuvem.
+     - `destroy`: Descomissiona todos os recursos criados para evitar custos.
+
+2. **Via GitHub CLI (Sem abrir o navegador)**:
+   ```bash
+   # Executar Apply completo da infraestrutura
+   gh workflow run terraform.yml -f action=apply
+
+   # Apenas gerar o Plan
+   gh workflow run terraform.yml -f action=plan
+
+   # Acompanhar a execução em tempo real no terminal
+   gh run watch
+   ```
+
+#### Opção B: Ciclo Automatizado de GitOps (Merge na `develop`)
+* **Branch `feature/*` e Pull Requests**: O Terraform **não é executado** em branches de feature ou durante a abertura de PRs, evitando execuções desnecessárias ou falhas por ausência de credenciais temporárias do laboratório.
+* **Merge na branch `develop`**: O pipeline é disparado automaticamente e executa o `terraform apply -auto-approve` no cluster EKS.
+
+
+
+---
+
+### 4.3. Conectar ao Cluster via Kubeconfig (Apenas Consulta e Validação)
+
+Após a conclusão com sucesso do job de `apply` no GitHub Actions, conecte-se ao cluster localmente para fins de inspeção:
 
 ```bash
-# 1. Inicializar providers e módulos
-terraform init
-
-# 2. Validar sintaxe
-terraform validate
-
-# 3. Planejar as alterações
-terraform plan
-
-# 4. Aplicar o provisionamento (cerca de 10 a 14 minutos)
-terraform apply -auto-approve
-```
-
-### 4.3. Conectar ao Cluster via Kubeconfig
-```bash
+# 1. Atualizar contexto local do kubectl
 aws eks update-kubeconfig --region us-east-1 --name techchallenge-cluster
-```
 
-Verifique se os nós e pods estão saudáveis:
-```bash
+# 2. Verificar nós operacionais
 kubectl get nodes
-kubectl get pods -A
+
+# 3. Verificar pods da aplicação e da observabilidade New Relic
+kubectl get pods -n garage
+kubectl get pods -n newrelic
 ```
 
 ---
 
-## 📑 5. Link para o Swagger e Postman das APIs
+## 📊 5. Observabilidade Integrada com New Relic
+
+A observabilidade do cluster e da aplicação foi modernizada e unificada no **New Relic**, provisionada 100% como código (IaC):
+
+* **Agente de Infraestrutura Kubernetes (`nri-bundle`)**:
+  - DaemonSets `nri-infrastructure` e `newrelic-logging` coletando métricas de nós/pods e logs estruturados em JSON assincronamente.
+* **OpenTelemetry APM Nativo**:
+  - A API `api-garage` envia métricas e traces via protocolo OTLP diretamente para a New Relic com correlação de logs (*Logs in Context* com `trace.id` e `span.id`).
+* **Dashboards Pré-Planejados em Código**:
+  - `API Garage - Ordens de Serviço & Negócio`: Volume diário de ordens criadas, tempo médio de execução por status (`DIAGNOSING`, `EXECUTING`, `FINISHED`) e taxa de sucesso/falha.
+  - `API Garage - Infraestrutura, Latência & Integrações`: Latência p95/p99 por rota, falhas de integrações (Postgres / AWS SQS), consumo de CPU/Memória K8s e Uptime de Pods.
+* **Alertas Inteligentes**:
+  - Incidentes disparados para falhas > 1% em ordens de serviço, exceções de mensageria SQS, banco de dados ou pods com status `isReady = 0`.
+
+---
+
+## 📑 6. Link para o Swagger e Postman das APIs
 
 Como este repositório provisiona o **AWS API Gateway**, ele é a porta de entrada oficial da aplicação na nuvem:
 
@@ -148,3 +193,4 @@ curl -i --location 'https://igqc9vtfx9.execute-api.us-east-1.amazonaws.com/api/a
 # 2. Keycloak Endpoint Interno (via Pod no cluster):
 # URL: http://keycloak.garage.svc.cluster.local:8080/realms/garage/.well-known/openid-configuration
 ```
+
