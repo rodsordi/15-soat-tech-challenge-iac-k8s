@@ -14,7 +14,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Ordens Criadas' FROM Span, Transaction WHERE (name LIKE '%POST%work-orders%' OR http.target = '/api/v1/work-orders' OR request.uri = '/api/v1/work-orders') AND (http.status_code = '201' OR numeric(http.response.status_code) = 201 OR response.status = '201') FACET dateOf(timestamp) SINCE 14 days ago"
+                "query": "SELECT count(*) AS 'Ordens Criadas' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/work-orders' AND method = 'POST' AND status = '201' FACET dateOf(timestamp) SINCE 14 days ago"
               }
             ]
           }
@@ -27,7 +27,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) FROM Span, Transaction WHERE (name LIKE '%work-orders%' OR http.target LIKE '%/work-orders%' OR request.uri LIKE '%/work-orders%') FACET coalesce(http.target, request.uri, name) SINCE 7 days ago"
+                "query": "SELECT count(*) FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' FACET uri SINCE 7 days ago"
               }
             ]
           }
@@ -40,7 +40,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT average(coalesce(duration.ms, duration * 1000)) AS 'Tempo Médio (ms)' FROM Span, Transaction WHERE (name LIKE '%work-orders%' OR http.target LIKE '%/work-orders%' OR request.uri LIKE '%/work-orders%') FACET coalesce(http.target, request.uri, name) TIMESERIES SINCE 24 hours ago"
+                "query": "SELECT average(http.server.requests) * 1000 AS 'Tempo Médio (ms)' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' FACET uri TIMESERIES SINCE 24 hours ago"
               }
             ]
           }
@@ -53,7 +53,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT percentage(count(*), WHERE otel.status_code != 'ERROR' AND (numeric(coalesce(http.status_code, response.status, 200)) < 400)) AS 'Taxa de Sucesso (%)' FROM Span, Transaction WHERE (name LIKE '%work-orders%' OR http.target LIKE '%/work-orders%' OR request.uri LIKE '%/work-orders%') SINCE 24 hours ago"
+                "query": "SELECT percentage(count(*), WHERE status LIKE '2%' OR status LIKE '3%') AS 'Taxa de Sucesso (%)' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' SINCE 24 hours ago"
               }
             ]
           }
