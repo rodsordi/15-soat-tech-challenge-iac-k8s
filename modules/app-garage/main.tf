@@ -175,7 +175,7 @@ resource "kubernetes_deployment" "garage_api" {
 
           startup_probe {
             http_get {
-              path = "/actuator/health"
+              path = "/api/actuator/health"
               port = 8080
             }
             initial_delay_seconds = 20
@@ -185,7 +185,7 @@ resource "kubernetes_deployment" "garage_api" {
 
           readiness_probe {
             http_get {
-              path = "/actuator/health"
+              path = "/api/actuator/health"
               port = 8080
             }
             initial_delay_seconds = 10
@@ -195,7 +195,7 @@ resource "kubernetes_deployment" "garage_api" {
 
           liveness_probe {
             http_get {
-              path = "/actuator/health"
+              path = "/api/actuator/health"
               port = 8080
             }
             initial_delay_seconds = 30
