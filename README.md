@@ -111,7 +111,7 @@ Você pode disparar qualquer ação (`plan`, `apply` ou `destroy`) diretamente p
 1. **Via Interface Web**:
    - Acesse a aba **Actions** do repositório no GitHub.
    - Selecione o workflow **Terraform EKS & App CI/CD Pipeline**.
-   - Clique em **Run workflow**, selecione a branch `main` e escolha a ação desejada:
+   - Clique em **Run workflow**, selecione a branch `develop` e escolha a ação desejada:
      - `apply`: Provisiona e atualiza toda a infraestrutura, workloads e observabilidade.
      - `plan`: Executa validação e gera o plano de execução sem alterar a nuvem.
      - `destroy`: Descomissiona todos os recursos criados para evitar custos.
@@ -129,8 +129,9 @@ Você pode disparar qualquer ação (`plan`, `apply` ou `destroy`) diretamente p
    ```
 
 #### Opção B: Ciclo Automatizado de GitOps (Pull Request & Merge)
-* **Pull Request (PR)** para `main`: Executa automaticamente `terraform fmt -check`, `terraform init`, `terraform validate` e `terraform plan`.
-* **Merge na branch `main`**: Executa automaticamente o `terraform apply -auto-approve`, aplicando as alterações no cluster EKS.
+* **Pull Request (PR)** para `develop`: Executa automaticamente `terraform fmt -check`, `terraform init`, `terraform validate` e `terraform plan`.
+* **Merge na branch `develop`**: Executa automaticamente o `terraform apply -auto-approve`, aplicando as alterações no cluster EKS.
+
 
 ---
 

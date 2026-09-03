@@ -3,12 +3,11 @@ name: "Terraform EKS & App CI/CD Pipeline"
 on:
   push:
     branches:
-      - main
-      - master
+      - develop
   pull_request:
     branches:
-      - main
-      - master
+      - develop
+
   workflow_dispatch:
     inputs:
       action:
@@ -77,8 +76,9 @@ jobs:
         run: terraform plan -no-color
 
       - name: Terraform Apply
-        if: ((github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+        if: (github.ref == 'refs/heads/develop' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
         run: terraform apply -auto-approve -no-color
+
 
       - name: Terraform Destroy
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'destroy'
