@@ -26,6 +26,8 @@ resource "kubernetes_secret" "db_credentials" {
 
 # --- JAVA APPLICATION (15-soat-tech-challenge-garage) ---
 resource "kubernetes_deployment" "garage_api" {
+  wait_for_rollout = false
+
   metadata {
     name      = "api-garage"
     namespace = var.namespace_name
@@ -34,6 +36,7 @@ resource "kubernetes_deployment" "garage_api" {
   lifecycle {
     ignore_changes = [metadata[0].annotations]
   }
+
 
   spec {
     replicas = 2

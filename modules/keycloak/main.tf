@@ -16,6 +16,8 @@ resource "kubernetes_secret" "keycloak_secret" {
 
 # --- Keycloak Deployment on Kubernetes (EKS) ---
 resource "kubernetes_deployment" "keycloak" {
+  wait_for_rollout = false
+
   metadata {
     name      = "keycloak"
     namespace = var.namespace_name
@@ -23,6 +25,7 @@ resource "kubernetes_deployment" "keycloak" {
       app = "keycloak"
     }
   }
+
 
   lifecycle {
     ignore_changes = [metadata[0].annotations]
