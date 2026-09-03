@@ -1,0 +1,116 @@
+{
+  "name": "PostgreSQL RDS - Database Performance & Pool Health",
+  "description": "Monitoramento dedicado de consultas SQL, performance do RDS, pool de conexoes HikariCP e integridade do banco",
+  "permissions": "PUBLIC_READ_WRITE",
+  "pages": [
+    {
+      "name": "Database & Pool Overview",
+      "widgets": [
+        {
+          "title": "Duracao Media de Consultas SQL (ms)",
+          "layout": { "column": 1, "row": 1, "width": 3, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(databaseDuration * 1000) AS 'Media SQL (ms)' FROM Transaction WHERE databaseDuration > 0 SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Percentil p95 de Consultas SQL (ms)",
+          "layout": { "column": 4, "row": 1, "width": 3, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT percentile(databaseDuration * 1000, 95) AS 'p95 SQL (ms)' FROM Transaction WHERE databaseDuration > 0 SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Conexoes Ativas no Pool (HikariCP)",
+          "layout": { "column": 7, "row": 1, "width": 3, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT latest(hikaricp.connections.active) AS 'Conexoes Ativas' FROM Metric WHERE appName LIKE '%api-garage%'"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Erros e Falhas de Conexao SQL (24h)",
+          "layout": { "column": 10, "row": 1, "width": 3, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Erros de Banco' FROM TransactionError WHERE appName LIKE '%api-garage%' AND (error.class LIKE '%SQL%' OR error.class LIKE '%Postgres%') SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Duracao Media e p95 de Consultas SQL (ms) ao Longo do Tempo",
+          "layout": { "column": 1, "row": 4, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.line" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(databaseDuration * 1000) AS 'Media SQL (ms)', percentile(databaseDuration * 1000, 95) AS 'p95 SQL (ms)' FROM Transaction WHERE databaseDuration > 0 TIMESERIES"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Pool HikariCP: Conexoes Ativas vs Ociosas vs Threads Aguardando",
+          "layout": { "column": 7, "row": 4, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.line" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(hikaricp.connections.active) AS 'Ativas', average(hikaricp.connections.idle) AS 'Ociosas', average(hikaricp.connections.pending) AS 'Aguardando Conexao' FROM Metric WHERE appName LIKE '%api-garage%' TIMESERIES"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Throughput de Transacoes com Banco de Dados por Rota",
+          "layout": { "column": 1, "row": 8, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.bar" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT count(*) AS 'Consultas SQL' FROM Transaction WHERE databaseDuration > 0 FACET request.uri SINCE 24 hours ago LIMIT 8"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Logs e Eventos de Integracao com PostgreSQL & HikariCP",
+          "layout": { "column": 7, "row": 8, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.table" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT timestamp, message, level FROM Log WHERE (message LIKE '%postgres%' OR message LIKE '%sql%' OR message LIKE '%hikari%' OR message LIKE '%jdbc%') SINCE 3 hours ago LIMIT 30"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
