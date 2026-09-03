@@ -52,31 +52,32 @@ resource "helm_release" "newrelic_bundle" {
     value = "false"
   }
 
-  # DaemonSet de Infraestrutura nos Nós (Node & Pod metrics)
+  # DaemonSet de Infraestrutura nos Nós (Node & Pod metrics - v3 compatible)
   set {
     name  = "newrelic-infrastructure.enabled"
     value = "true"
   }
 
   set {
-    name  = "newrelic-infrastructure.resources.limits.cpu"
+    name  = "newrelic-infrastructure.kubelet.resources.limits.cpu"
     value = "150m"
   }
 
   set {
-    name  = "newrelic-infrastructure.resources.limits.memory"
+    name  = "newrelic-infrastructure.kubelet.resources.limits.memory"
     value = "256Mi"
   }
 
   set {
-    name  = "newrelic-infrastructure.resources.requests.cpu"
+    name  = "newrelic-infrastructure.kubelet.resources.requests.cpu"
     value = "30m"
   }
 
   set {
-    name  = "newrelic-infrastructure.resources.requests.memory"
+    name  = "newrelic-infrastructure.kubelet.resources.requests.memory"
     value = "64Mi"
   }
+
 
   # Coleta de Logs via Fluent Bit (lê /var/log/pods no nó assincronamente)
   set {
