@@ -109,6 +109,32 @@
               }
             ]
           }
+        },
+        {
+          "title": "PostgreSQL / HikariCP - Conexões do Pool de Dados (Ativas vs Ociosas)",
+          "layout": { "column": 1, "row": 13, "width": 6, "height": 3 },
+          "visualization": { "id": "viz.line" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(hikaricp.connections.active) AS 'Conexões Ativas', average(hikaricp.connections.idle) AS 'Conexões Ociosas', average(hikaricp.connections.pending) AS 'Threads Aguardando Conexão' FROM Metric WHERE appName LIKE '%api-garage%' TIMESERIES"
+              }
+            ]
+          }
+        },
+        {
+          "title": "PostgreSQL - Tempo Médio de Consultas e Operações SQL (ms)",
+          "layout": { "column": 7, "row": 13, "width": 6, "height": 3 },
+          "visualization": { "id": "viz.line" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(databaseDuration * 1000) AS 'Duração Média SQL (ms)', percentile(databaseDuration * 1000, 95) AS 'p95 SQL (ms)' FROM Transaction WHERE appName LIKE '%api-garage%' AND databaseDuration > 0 TIMESERIES"
+              }
+            ]
+          }
         }
       ]
     }

@@ -128,3 +128,46 @@ resource "newrelic_nrql_alert_condition" "keycloak_unhealthy" {
     threshold_occurrences = "ALL"
   }
 }
+
+# 7. Alerta para Esgotamento do Pool de Conexões do PostgreSQL (HikariCP Timeout)
+resource "newrelic_nrql_alert_condition" "postgres_pool_exhausted" {
+  account_id                   = var.newrelic_account_id
+  policy_id                    = newrelic_alert_policy.garage_business_policy.id
+  name                         = "PostgreSQL Connection Pool Saturated (HikariCP Timeout)"
+  type                         = "static"
+  enabled                      = true
+  violation_time_limit_seconds = 3600
+
+  nrql {
+    query = "SELECT count(*) FROM TransactionError WHERE appName LIKE '%api-garage%' AND (error.class LIKE '%SQLTransientConnectionException%' OR error.message LIKE '%Connection is not available%')"
+  }
+
+  critical {
+    operator              = "above"
+    threshold             = 0
+    threshold_duration    = 180
+    threshold_occurrences = "AT_LEAST_ONCE"
+  }
+}
+
+# 8. Alerta para Queries Lentas no PostgreSQL (Latência de Banco > 1s)
+resource "newrelic_nrql_alert_condition" "postgres_slow_queries" {
+  account_id                   = var.newrelic_account_id
+  policy_id                    = newrelic_alert_policy.garage_business_policy.id
+  name                         = "PostgreSQL Slow Queries (Database Latency > 1s)"
+  type                         = "static"
+  enabled                      = true
+  violation_time_limit_seconds = 3600
+
+  nrql {
+    query = "SELECT average(databaseDuration * 1000) FROM Transaction WHERE appName LIKE '%api-garage%' AND databaseDuration > 0"
+  }
+
+  critical {
+    operator              = "above"
+    threshold             = 1000
+    threshold_duration    = 300
+    threshold_occurrences = "ALL"
+  }
+}
+
