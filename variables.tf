@@ -25,7 +25,7 @@ variable "node_instance_type" {
 variable "db_host" {
   type        = string
   description = "AWS RDS Endpoint address"
-  default     = "garage-postgres-db.c1234567890.us-east-1.rds.amazonaws.com"
+  default     = "garage-postgres-db.cvmr3avpubxq.us-east-1.rds.amazonaws.com"
 }
 
 variable "db_password" {

@@ -164,13 +164,23 @@ resource "kubernetes_deployment" "garage_api" {
 
           resources {
             limits = {
-              cpu    = "500m"
-              memory = "512Mi"
+              cpu    = "1000m"
+              memory = "1024Mi"
             }
             requests = {
               cpu    = "250m"
-              memory = "256Mi"
+              memory = "512Mi"
             }
+          }
+
+          startup_probe {
+            http_get {
+              path = "/actuator/health"
+              port = 8080
+            }
+            initial_delay_seconds = 20
+            period_seconds        = 10
+            failure_threshold     = 20
           }
 
           readiness_probe {
@@ -178,8 +188,9 @@ resource "kubernetes_deployment" "garage_api" {
               path = "/actuator/health"
               port = 8080
             }
-            initial_delay_seconds = 15
+            initial_delay_seconds = 10
             period_seconds        = 10
+            failure_threshold     = 3
           }
 
           liveness_probe {
@@ -189,8 +200,10 @@ resource "kubernetes_deployment" "garage_api" {
             }
             initial_delay_seconds = 30
             period_seconds        = 15
+            failure_threshold     = 3
           }
         }
+
       }
     }
   }
