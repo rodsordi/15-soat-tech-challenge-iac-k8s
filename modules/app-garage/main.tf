@@ -118,14 +118,14 @@ resource "kubernetes_deployment" "garage_api" {
           }
 
           env {
-            name  = "MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT"
+            name  = "MANAGEMENT_OTLP_TRACING_ENDPOINT"
             value = "https://otlp.nr-data.net:4318/v1/traces"
           }
 
           dynamic "env" {
             for_each = var.newrelic_license_key != "" ? [1] : []
             content {
-              name = "MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_HEADERS_API_KEY"
+              name = "MANAGEMENT_OTLP_TRACING_HEADERS_API_KEY"
               value_from {
                 secret_key_ref {
                   name = kubernetes_secret.newrelic_credentials[0].metadata[0].name
@@ -143,7 +143,7 @@ resource "kubernetes_deployment" "garage_api" {
           dynamic "env" {
             for_each = var.newrelic_license_key != "" ? [1] : []
             content {
-              name = "MANAGEMENT_OPENTELEMETRY_METRICS_EXPORT_OTLP_HEADERS_API_KEY"
+              name = "MANAGEMENT_OTLP_METRICS_EXPORT_HEADERS_API_KEY"
               value_from {
                 secret_key_ref {
                   name = kubernetes_secret.newrelic_credentials[0].metadata[0].name
@@ -151,6 +151,11 @@ resource "kubernetes_deployment" "garage_api" {
                 }
               }
             }
+          }
+
+          env {
+            name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value = "https://otlp.nr-data.net:4318"
           }
 
           dynamic "env" {

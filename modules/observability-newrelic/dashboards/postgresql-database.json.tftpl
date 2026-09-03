@@ -14,7 +14,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT average(databaseDuration * 1000) AS 'Media SQL (ms)' FROM Transaction WHERE databaseDuration > 0 SINCE 24 hours ago"
+                "query": "SELECT average(coalesce(duration.ms, databaseDuration * 1000)) AS 'Media SQL (ms)' FROM Span, Transaction WHERE (db.system IS NOT NULL OR databaseDuration > 0) SINCE 24 hours ago"
               }
             ]
           }
@@ -27,7 +27,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT percentile(databaseDuration * 1000, 95) AS 'p95 SQL (ms)' FROM Transaction WHERE databaseDuration > 0 SINCE 24 hours ago"
+                "query": "SELECT percentile(coalesce(duration.ms, databaseDuration * 1000), 95) AS 'p95 SQL (ms)' FROM Span, Transaction WHERE (db.system IS NOT NULL OR databaseDuration > 0) SINCE 24 hours ago"
               }
             ]
           }
@@ -53,7 +53,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Erros de Banco' FROM TransactionError WHERE appName LIKE '%api-garage%' AND (error.class LIKE '%SQL%' OR error.class LIKE '%Postgres%') SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Erros de Banco' FROM Span, TransactionError WHERE (service.name LIKE '%api-garage%' OR appName LIKE '%api-garage%') AND (otel.status_code = 'ERROR' OR error.class LIKE '%SQL%' OR error.class LIKE '%Postgres%') SINCE 24 hours ago"
               }
             ]
           }
@@ -66,7 +66,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT average(databaseDuration * 1000) AS 'Media SQL (ms)', percentile(databaseDuration * 1000, 95) AS 'p95 SQL (ms)' FROM Transaction WHERE databaseDuration > 0 TIMESERIES"
+                "query": "SELECT average(coalesce(duration.ms, databaseDuration * 1000)) AS 'Media SQL (ms)', percentile(coalesce(duration.ms, databaseDuration * 1000), 95) AS 'p95 SQL (ms)' FROM Span, Transaction WHERE (db.system IS NOT NULL OR databaseDuration > 0) TIMESERIES"
               }
             ]
           }
@@ -92,7 +92,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Consultas SQL' FROM Transaction WHERE databaseDuration > 0 FACET request.uri SINCE 24 hours ago LIMIT 8"
+                "query": "SELECT count(*) AS 'Consultas SQL' FROM Span, Transaction WHERE (db.system IS NOT NULL OR databaseDuration > 0) FACET coalesce(http.target, request.uri, name) SINCE 24 hours ago LIMIT 8"
               }
             ]
           }
