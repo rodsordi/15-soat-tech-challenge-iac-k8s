@@ -122,6 +122,29 @@ resource "kubernetes_deployment" "garage_api" {
             value = "https://otlp.nr-data.net:4318/v1/traces"
           }
 
+          env {
+            name  = "MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT"
+            value = "https://otlp.nr-data.net:4318/v1/traces"
+          }
+
+          env {
+            name  = "MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_TRANSPORT"
+            value = "http"
+          }
+
+          dynamic "env" {
+            for_each = var.newrelic_license_key != "" ? [1] : []
+            content {
+              name = "NEWRELIC_LICENSE_KEY"
+              value_from {
+                secret_key_ref {
+                  name = kubernetes_secret.newrelic_credentials[0].metadata[0].name
+                  key  = "license"
+                }
+              }
+            }
+          }
+
           dynamic "env" {
             for_each = var.newrelic_license_key != "" ? [1] : []
             content {
