@@ -166,13 +166,19 @@ resource "kubernetes_deployment" "keycloak" {
   }
 }
 
-# --- Keycloak Internal Service ---
+# --- Keycloak Internal NLB Service ---
 resource "kubernetes_service" "keycloak" {
   metadata {
     name      = "keycloak"
     namespace = var.namespace_name
     labels = {
       app = "keycloak"
+    }
+    annotations = {
+      "service.beta.kubernetes.io/aws-load-balancer-type"            = "nlb"
+      "service.beta.kubernetes.io/aws-load-balancer-internal"        = "true"
+      "service.beta.kubernetes.io/aws-load-balancer-scheme"          = "internal"
+      "service.beta.kubernetes.io/aws-load-balancer-nlb-target-type" = "instance"
     }
   }
 
@@ -192,6 +198,6 @@ resource "kubernetes_service" "keycloak" {
       protocol    = "TCP"
     }
 
-    type = "ClusterIP"
+    type = "LoadBalancer"
   }
 }
