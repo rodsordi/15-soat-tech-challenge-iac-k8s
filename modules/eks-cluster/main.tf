@@ -177,6 +177,14 @@ resource "aws_security_group" "eks_nodes_sg" {
   }
 
   ingress {
+    description = "Allow internal VPC traffic (NLB, Lambda, intra-VPC workloads)"
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.eks_vpc.cidr_block]
+  }
+
+  ingress {
     description = "Allow internal node-to-node & pod-to-pod communication"
     from_port   = 0
     to_port     = 0
