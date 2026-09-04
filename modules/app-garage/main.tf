@@ -154,6 +154,11 @@ resource "kubernetes_deployment" "garage_api" {
           }
 
           env {
+            name  = "SQS_ENABLED"
+            value = "true"
+          }
+
+          env {
             name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
             value = "https://otlp.nr-data.net:4318"
           }
