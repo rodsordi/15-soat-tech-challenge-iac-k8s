@@ -82,6 +82,16 @@ resource "kubernetes_deployment" "garage_api" {
           }
 
           env {
+            name  = "SPRING_PROFILES_ACTIVE"
+            value = "prd"
+          }
+
+          env {
+            name  = "KEYCLOAK_JWK_SET_URI"
+            value = "http://keycloak.garage.svc.cluster.local:8080/realms/garage/protocol/openid-connect/certs"
+          }
+
+          env {
             name  = "SPRING_DATASOURCE_URL"
             value = "jdbc:postgresql://${var.db_host}:${var.db_port}/${var.db_name}"
           }
