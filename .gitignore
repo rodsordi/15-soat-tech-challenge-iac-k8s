@@ -41,4 +41,6 @@ terraform.rc
 
 .sonar_token
 cluster-local-dev-config
-*.tar
+*.tar
+.terraform.lock.hcl
+
