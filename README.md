@@ -9,6 +9,7 @@ Repositório central de **Infraestrutura como Código (IaC)** responsável por p
 Este repositório estabelece a fundação de nuvem e orquestração de contêineres para todo o ecossistema do Tech Challenge:
 * **Isolamento e Segurança de Rede**: Criação de VPC com subnets públicas e privadas, NAT Gateway para saída controlada à internet e grupos de segurança restritivos.
 * **Orquestração de Microsserviços**: Provisionamento do cluster gerenciado **AWS EKS** com autoscaling de nós e Horizontal Pod Autoscaler (HPA).
+* **Mensageria Assíncrona & Event-Driven**: Provisionamento de **Amazon SNS** e **Amazon SQS** com Dead Letter Queue (DLQ), política de redrive e subscrição fanout gerenciada via módulo `modules/messaging`.
 * **Ponto Único de Entrada (Single Entrypoint)**: Exposição segura das APIs internas através do **AWS API Gateway (HTTP API v2)** integrado via **VPC Link** ao **Network Load Balancer (NLB) interno** da AWS.
 * **Gestão de Identidades no Cluster**: Execução do **Keycloak 24** dentro do Kubernetes em modo seguro para fornecer autenticação OIDC à Lambda e aos microsserviços.
 * **Repositório de Imagens**: Criação do **AWS ECR** (`garage-api`) com criptografia e varredura de vulnerabilidades contínua.
@@ -20,6 +21,7 @@ Este repositório estabelece a fundação de nuvem e orquestração de contêine
 * **Infraestrutura como Código**: Terraform 1.6+ (com HCL modularizado em `modules/`).
 * **Cloud Provider**: Amazon Web Services (AWS) no ambiente **AWS Academy Learner Lab**.
 * **Orquestração de Contêineres**: AWS Elastic Kubernetes Service (EKS v1.29) com Managed Node Groups (`t3.small`).
+* **Mensageria Assíncrona**: Amazon Simple Notification Service (SNS) e Amazon Simple Queue Service (SQS) com DLQ.
 * **Rede & Tráfego AWS**: AWS VPC, Internet Gateway, Elastic IP, NAT Gateway, AWS Network Load Balancer (NLB) interno e AWS API Gateway HTTP v2 com VPC Link.
 * **Gerenciamento de Pacotes K8s**: Helm 3 (Helm Release para o `metrics-server`).
 * **Gestão de Identidade & Acesso**: Keycloak 24.0.5, OpenID Connect (OIDC), OAuth2 e AWS IAM Role (`LabRole`).
@@ -31,44 +33,90 @@ Este repositório estabelece a fundação de nuvem e orquestração de contêine
 ## 🏛️ 3. Diagrama da Arquitetura do Repositório
 
 ```mermaid
-graph TD
-    Client([Usuário / Frontend / Postman]) -->|HTTPS:443| ApiGateway[AWS API Gateway HTTP API v2]
-    
-    subgraph AWS_VPC [AWS VPC 10.0.0.0/16 Multi-AZ]
-        subgraph PublicSubnets [Subnets Públicas - 10.0.1.0/24 e 10.0.2.0/24]
-            VpcLink[VPC Link Endpoint]
-            NATGW[NAT Gateway]
-            IGW[Internet Gateway]
-        end
+graph TB
+    Client(["Usuário / Frontend / Postman"]) -->|"HTTPS :443 (Bearer JWT)"| ApiGateway["AWS API Gateway HTTP API v2<br/>(8sggxeps4j.execute-api.us-east-1.amazonaws.com)"]
+
+    subgraph AWS_Cloud ["Nuvem AWS (us-east-1)"]
         
-        ApiGateway -->|Roteia tráfego| VpcLink
-        
-        subgraph PrivateSubnets [Subnets Privadas - 10.0.10.0/24 e 10.0.20.0/24]
-            InternalNLB[AWS NLB Interno :8080]
+        subgraph AWS_VPC ["AWS VPC (10.0.0.0/16) - Multi-AZ"]
             
-            subgraph EKSCluster [Cluster AWS EKS techchallenge-cluster]
-                subgraph NamespaceGarage [Namespace: garage]
-                    AppService[Service api-garage]
-                    AppPods[Pods api-garage Spring Boot]
-                    KeycloakService[Service keycloak ClusterIP :8080]
-                    KeycloakPods[Pod Keycloak OIDC]
-                    HPAScaler[Horizontal Pod Autoscaler]
+            subgraph PublicSubnets ["Subnets Públicas (10.0.1.0/24 & 10.0.2.0/24)"]
+                VpcLink["VPC Link Endpoint"]
+                NATGW["AWS NAT Gateway"]
+                IGW["Internet Gateway (IGW)"]
+            end
+
+            subgraph PrivateSubnets ["Subnets Privadas (10.0.10.0/24 & 10.0.20.0/24)"]
+                InternalNLB["AWS Network Load Balancer (NLB Interno :8080)"]
+
+                subgraph EKSCluster ["Cluster AWS EKS (techchallenge-cluster)"]
+                    
+                    subgraph NamespaceGarage ["Namespace: garage"]
+                        AppService["K8s Service: api-garage (:8080)"]
+                        AppPods["Pods: api-garage (Spring Boot 4.x / Java 25)<br/>Clean Arch | Stateless JWT RS256"]
+                        HPA["Horizontal Pod Autoscaler (HPA)"]
+                        KeycloakService["K8s Service: keycloak (:8080)"]
+                        KeycloakPods["Pod: Keycloak OIDC Server (v24)"]
+                    end
+
+                    subgraph NamespaceKubeSystem ["Namespace: kube-system"]
+                        MetricsServer["Metrics Server Pod"]
+                    end
                 end
-                
-                MetricsServer[Metrics Server Pod]
+            end
+
+            VpcLink -->|"Listener TCP :8080"| InternalNLB
+            InternalNLB --> AppService
+            AppService --> AppPods
+            AppPods -->|"Validação JWKS Local (/certs)"| KeycloakService
+            KeycloakService --> KeycloakPods
+            HPA -.->|"Métricas de CPU/Memória"| MetricsServer
+            MetricsServer -.->|"Coleta métricas"| AppPods
+            PrivateSubnets -->|"Saída à Internet / AWS APIs"| NATGW
+            NATGW --> IGW
+        end
+
+        subgraph Managed_Services ["Serviços Gerenciados AWS & IaC"]
+            ECR["AWS ECR garage-api<br/>(Repositório de Imagens)"]
+            
+            subgraph AWSMessaging ["modules/messaging (Mensageria Assíncrona)"]
+                SNSTopic["AWS SNS Topic<br/>api-garage_notification-creation_topic"]
+                SQSQueue["AWS SQS Queue<br/>api-garage_notification-creation_queue"]
+                SQSDLQ["AWS SQS DLQ<br/>api-garage_notification-creation_queue_dlq"]
             end
         end
-        
-        VpcLink -->|Listener ARN :8080| InternalNLB
-        InternalNLB --> AppService
-        AppService --> AppPods
-        HPAScaler -.->|Monitora CPU| AppPods
-        PrivateSubnets -->|Saída à Internet| NATGW
-        NATGW --> IGW
-    end
 
-    ECR[AWS ECR garage-api] -.->|Pull de Imagens| AppPods
+        subgraph ObservabilityStack ["Observabilidade & APM (modules/observability-newrelic)"]
+            NewRelic["New Relic One (APM Centralizado)<br/>Distributed Tracing OTLP / Métricas / Dashboards"]
+        end
+
+        ApiGateway -->|"Roteia tráfego privado"| VpcLink
+        ECR -.->|"Pull de Imagem :latest"| AppPods
+        AppPods -->|"1. Publica Evento (WAITING_FOR_APPROVAL)"| SNSTopic
+        SNSTopic -->|"2. Subscrição Fanout"| SQSQueue
+        SQSQueue -->|"3. Consumo Assíncrono (@SqsListener)"| AppPods
+        SQSQueue -.->|"Redrive após 3 falhas"| SQSDLQ
+        AppPods -.->|"Telemetria OTLP (:4318)"| NewRelic
+    end
 ```
+
+### 📬 Módulo de Mensageria (`modules/messaging`)
+
+Provisiona os tópicos e filas totalmente integrados ao pod da aplicação `api-garage`:
+
+| Recurso | Nome do Recurso no Terraform | Identificador AWS | Finalidade |
+| :--- | :--- | :--- | :--- |
+| **SNS Topic** | `aws_sns_topic.notification_creation_topic` | `api-garage_notification-creation_topic` | Recepção pub/sub de eventos do ciclo de vida da OS |
+| **SQS Queue** | `aws_sqs_queue.notification_creation_queue` | `api-garage_notification-creation_queue` | Fila bufferizada com retenção de 4 dias e visibilidade de 30s |
+| **SQS DLQ** | `aws_sqs_queue.notification_creation_dlq` | `api-garage_notification-creation_queue_dlq` | Dead Letter Queue com 14 dias de retenção |
+| **Subscription** | `aws_sns_topic_subscription.notification_sqs_sub` | Protocolo `sqs` | Encaminhamento fanout automático do SNS para a SQS |
+| **Queue Policy**| `aws_sqs_queue_policy.notification_queue_policy` | Resource-based Policy | Autorização da ação `sqs:SendMessage` concedida ao SNS |
+
+As referências (`topic_name` e `queue_name`) são injetadas automaticamente no módulo `modules/app-garage` e expostas como variáveis de ambiente no pod:
+* `SNS_ENABLED = "true"`
+* `SQS_ENABLED = "true"`
+* `NOTIFICATION_TOPIC = "api-garage_notification-creation_topic"`
+* `NOTIFICATION_QUEUE = "api-garage_notification-creation_queue"`
 
 ---
 
@@ -183,18 +231,18 @@ Como este repositório provisiona o **AWS API Gateway**, ele é a porta de entra
 ### 🌐 Endpoints do Swagger / OpenAPI na Nuvem:
 * **Swagger UI Oficial**: 
   ```
-  https://igqc9vtfx9.execute-api.us-east-1.amazonaws.com/api/swagger-ui/index.html
+  https://8sggxeps4j.execute-api.us-east-1.amazonaws.com/api/swagger-ui/index.html
   ```
 * **OpenAPI 3 JSON Spec**: 
   ```
-  https://igqc9vtfx9.execute-api.us-east-1.amazonaws.com/api/v3/api-docs
+  https://8sggxeps4j.execute-api.us-east-1.amazonaws.com/api/v3/api-docs
   ```
 
 ### 📬 Testes Rápidos via Postman / cURL:
 
 ```bash
 # 1. Testar conexão através do API Gateway
-curl -i --location 'https://igqc9vtfx9.execute-api.us-east-1.amazonaws.com/api/actuator/health'
+curl -i --location 'https://8sggxeps4j.execute-api.us-east-1.amazonaws.com/api/actuator/health'
 
 # 2. Keycloak Endpoint Interno (via Pod no cluster):
 # URL: http://keycloak.garage.svc.cluster.local:8080/realms/garage/.well-known/openid-configuration
