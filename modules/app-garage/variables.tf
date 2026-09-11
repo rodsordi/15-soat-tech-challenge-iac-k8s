@@ -84,3 +84,9 @@ variable "notification_queue" {
   default     = "api-garage_notification-creation_queue"
 }
 
+variable "use_existing_lab_role" {
+  type        = bool
+  description = "Whether AWS Academy LabRole is being used"
+  default     = true
+}
+

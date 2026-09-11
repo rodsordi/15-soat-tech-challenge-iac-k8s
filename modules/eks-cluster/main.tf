@@ -251,6 +251,21 @@ resource "aws_iam_role" "eks_node_role" {
   })
 }
 
+# --- Launch Template for Node Group (Ensuring IMDSv2 Hop Limit 2 for Pods) ---
+resource "aws_launch_template" "eks_nodes" {
+  name_prefix = "${var.cluster_name}-node-template-"
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 2
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 # --- EKS Node Group (Deployed into Private Subnets) ---
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
@@ -264,8 +279,12 @@ resource "aws_eks_node_group" "main" {
     min_size     = 1
   }
 
-
   instance_types = [var.node_instance_type]
+
+  launch_template {
+    id      = aws_launch_template.eks_nodes.id
+    version = aws_launch_template.eks_nodes.latest_version
+  }
 }
 
 # Custom IRSA Role for Application (Non-AWS Academy Mode)

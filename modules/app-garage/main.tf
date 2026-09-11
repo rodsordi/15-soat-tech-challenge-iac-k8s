@@ -3,7 +3,7 @@ resource "kubernetes_service_account" "garage_api_sa" {
   metadata {
     name      = "api-garage-sa"
     namespace = var.namespace_name
-    annotations = {
+    annotations = var.use_existing_lab_role ? {} : {
       "eks.amazonaws.com/role-arn" = var.irsa_role_arn
     }
   }
