@@ -188,7 +188,7 @@ resource "kubernetes_deployment" "garage_api" {
 
           env {
             name  = "SQS_ENABLED"
-            value = "true"
+            value = "false"
           }
 
           env {
