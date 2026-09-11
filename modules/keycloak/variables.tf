@@ -6,26 +6,26 @@ variable "namespace_name" {
 
 variable "db_host" {
   type        = string
-  description = "AWS RDS PostgreSQL Host endpoint"
-  default     = "localhost"
+  description = "Keycloak internal database host"
+  default     = "keycloak-db"
 }
 
 variable "db_port" {
   type        = string
-  description = "AWS RDS PostgreSQL Port"
+  description = "Keycloak database Port"
   default     = "5432"
 }
 
 variable "db_name" {
   type        = string
   description = "Database name for Keycloak data"
-  default     = "postgres"
+  default     = "keycloak"
 }
 
 variable "db_username" {
   type        = string
-  description = "Database master username"
-  default     = "postgres"
+  description = "Database master username for Keycloak"
+  default     = "keycloak"
 }
 
 variable "db_password" {

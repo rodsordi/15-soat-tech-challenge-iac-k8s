@@ -67,7 +67,6 @@ module "observability_newrelic" {
 module "keycloak" {
   source         = "./modules/keycloak"
   namespace_name = kubernetes_namespace.garage.metadata[0].name
-  db_host        = var.db_host
   db_password    = var.db_password
 
   depends_on = [module.eks_cluster]

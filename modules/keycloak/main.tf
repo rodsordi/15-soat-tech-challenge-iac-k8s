@@ -9,14 +9,164 @@ resource "kubernetes_secret" "keycloak_secret" {
     KEYCLOAK_ADMIN          = var.admin_username
     KEYCLOAK_ADMIN_PASSWORD = var.admin_password
     KC_DB_PASSWORD          = var.db_password
+    POSTGRES_DB             = var.db_name
+    POSTGRES_USER           = var.db_username
+    POSTGRES_PASSWORD       = var.db_password
   }
 
   type = "Opaque"
 }
 
+# --- Keycloak Dedicated Database (PostgreSQL) ---
+resource "kubernetes_deployment" "keycloak_db" {
+  wait_for_rollout = false
+
+  metadata {
+    name      = "keycloak-db"
+    namespace = var.namespace_name
+    labels = {
+      app = "keycloak-db"
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "keycloak-db"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "keycloak-db"
+        }
+      }
+
+      spec {
+        container {
+          name  = "postgres"
+          image = "postgres:15-alpine"
+
+          port {
+            name           = "postgres"
+            container_port = 5432
+          }
+
+          env {
+            name = "POSTGRES_DB"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.keycloak_secret.metadata[0].name
+                key  = "POSTGRES_DB"
+              }
+            }
+          }
+
+          env {
+            name = "POSTGRES_USER"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.keycloak_secret.metadata[0].name
+                key  = "POSTGRES_USER"
+              }
+            }
+          }
+
+          env {
+            name = "POSTGRES_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret.keycloak_secret.metadata[0].name
+                key  = "POSTGRES_PASSWORD"
+              }
+            }
+          }
+
+          resources {
+            limits = {
+              cpu    = "500m"
+              memory = "256Mi"
+            }
+            requests = {
+              cpu    = "100m"
+              memory = "128Mi"
+            }
+          }
+
+          volume_mount {
+            name       = "postgres-data"
+            mount_path = "/var/lib/postgresql/data"
+          }
+
+          liveness_probe {
+            exec {
+              command = ["pg_isready", "-U", var.db_username, "-d", var.db_name]
+            }
+            initial_delay_seconds = 15
+            period_seconds        = 10
+            timeout_seconds       = 5
+          }
+
+          readiness_probe {
+            exec {
+              command = ["pg_isready", "-U", var.db_username, "-d", var.db_name]
+            }
+            initial_delay_seconds = 5
+            period_seconds        = 5
+            timeout_seconds       = 3
+          }
+        }
+
+        volume {
+          name = "postgres-data"
+          empty_dir {}
+        }
+      }
+    }
+  }
+}
+
+# --- Keycloak Database Internal Service ---
+resource "kubernetes_service" "keycloak_db" {
+  metadata {
+    name      = "keycloak-db"
+    namespace = var.namespace_name
+    labels = {
+      app = "keycloak-db"
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [metadata[0].annotations]
+  }
+
+  spec {
+    selector = {
+      app = "keycloak-db"
+    }
+
+    port {
+      name        = "postgres"
+      port        = 5432
+      target_port = 5432
+      protocol    = "TCP"
+    }
+
+    type = "ClusterIP"
+  }
+}
+
 # --- Keycloak Deployment on Kubernetes (EKS) ---
 resource "kubernetes_deployment" "keycloak" {
   wait_for_rollout = false
+  depends_on       = [kubernetes_deployment.keycloak_db, kubernetes_service.keycloak_db]
 
   metadata {
     name      = "keycloak"
@@ -65,7 +215,7 @@ resource "kubernetes_deployment" "keycloak" {
 
           env {
             name  = "KC_DB_URL_HOST"
-            value = var.db_host
+            value = "keycloak-db"
           }
 
           env {

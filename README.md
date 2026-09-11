@@ -59,6 +59,8 @@ graph TB
                         HPA["Horizontal Pod Autoscaler (HPA)"]
                         KeycloakService["K8s Service: keycloak (:8080)"]
                         KeycloakPods["Pod: Keycloak OIDC Server (v24)"]
+                        KeycloakDBSvc["K8s Service: keycloak-db (:5432)"]
+                        KeycloakDB["Pod: Keycloak DB (PostgreSQL 15 Alpine)"]
                     end
 
                     subgraph NamespaceKubeSystem ["Namespace: kube-system"]
@@ -72,6 +74,8 @@ graph TB
             AppService --> AppPods
             AppPods -->|"Validação JWKS Local (/certs)"| KeycloakService
             KeycloakService --> KeycloakPods
+            KeycloakPods -->|"Persistência IAM (:5432)"| KeycloakDBSvc
+            KeycloakDBSvc --> KeycloakDB
             HPA -.->|"Métricas de CPU/Memória"| MetricsServer
             MetricsServer -.->|"Coleta métricas"| AppPods
             PrivateSubnets -->|"Saída à Internet / AWS APIs"| NATGW
@@ -248,18 +252,18 @@ Como este repositório provisiona o **AWS API Gateway**, ele é a porta de entra
 ### 🌐 Endpoints do Swagger / OpenAPI na Nuvem:
 * **Swagger UI Oficial**: 
   ```
-  https://8sggxeps4j.execute-api.us-east-1.amazonaws.com/api/swagger-ui/index.html
+  https://6t8e18w3f8.execute-api.us-east-1.amazonaws.com/api/swagger-ui/index.html
   ```
 * **OpenAPI 3 JSON Spec**: 
   ```
-  https://8sggxeps4j.execute-api.us-east-1.amazonaws.com/api/v3/api-docs
+  https://6t8e18w3f8.execute-api.us-east-1.amazonaws.com/api/v3/api-docs
   ```
 
 ### 📬 Testes Rápidos via Postman / cURL:
 
 ```bash
 # 1. Testar conexão através do API Gateway
-curl -i --location 'https://8sggxeps4j.execute-api.us-east-1.amazonaws.com/api/actuator/health'
+curl -i --location 'https://6t8e18w3f8.execute-api.us-east-1.amazonaws.com/api/actuator/health'
 
 # 2. Keycloak Endpoint Interno (via Pod no cluster):
 # URL: http://keycloak.garage.svc.cluster.local:8080/realms/garage/.well-known/openid-configuration
