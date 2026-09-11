@@ -10,6 +10,7 @@ Este repositório estabelece a fundação de nuvem e orquestração de contêine
 * **Isolamento e Segurança de Rede**: Criação de VPC com subnets públicas e privadas, NAT Gateway para saída controlada à internet e grupos de segurança restritivos.
 * **Orquestração de Microsserviços**: Provisionamento do cluster gerenciado **AWS EKS** com autoscaling de nós e Horizontal Pod Autoscaler (HPA).
 * **Mensageria Assíncrona & Event-Driven**: Provisionamento de **Amazon SNS** e **Amazon SQS** com Dead Letter Queue (DLQ), política de redrive e subscrição fanout gerenciada via módulo `modules/messaging`.
+* **Armazenamento de Estado Remoto (Amazon S3)**: Persistência centralizada e segura do estado do Terraform (`k8s/terraform.tfstate`) no bucket `techchallenge-fiap-tfstate-890958457263` com versionamento ativo e auto-provisionamento resiliente no CI/CD.
 * **Ponto Único de Entrada (Single Entrypoint)**: Exposição segura das APIs internas através do **AWS API Gateway (HTTP API v2)** integrado via **VPC Link** ao **Network Load Balancer (NLB) interno** da AWS.
 * **Gestão de Identidades no Cluster**: Execução do **Keycloak 24** dentro do Kubernetes em modo seguro para fornecer autenticação OIDC à Lambda e aos microsserviços.
 * **Repositório de Imagens**: Criação do **AWS ECR** (`garage-api`) com criptografia e varredura de vulnerabilidades contínua.
@@ -22,6 +23,7 @@ Este repositório estabelece a fundação de nuvem e orquestração de contêine
 * **Cloud Provider**: Amazon Web Services (AWS) no ambiente **AWS Academy Learner Lab**.
 * **Orquestração de Contêineres**: AWS Elastic Kubernetes Service (EKS v1.29) com Managed Node Groups (`t3.small`).
 * **Mensageria Assíncrona**: Amazon Simple Notification Service (SNS) e Amazon Simple Queue Service (SQS) com DLQ.
+* **Armazenamento em Nuvem & Backend**: Amazon Simple Storage Service (S3) com versionamento habilitado para isolamento e governança de estado (`tfstate`).
 * **Rede & Tráfego AWS**: AWS VPC, Internet Gateway, Elastic IP, NAT Gateway, AWS Network Load Balancer (NLB) interno e AWS API Gateway HTTP v2 com VPC Link.
 * **Gerenciamento de Pacotes K8s**: Helm 3 (Helm Release para o `metrics-server`).
 * **Gestão de Identidade & Acesso**: Keycloak 24.0.5, OpenID Connect (OIDC), OAuth2 e AWS IAM Role (`LabRole`).
@@ -78,6 +80,7 @@ graph TB
 
         subgraph Managed_Services ["Serviços Gerenciados AWS & IaC"]
             ECR["AWS ECR garage-api<br/>(Repositório de Imagens)"]
+            S3State[("AWS S3 Bucket: Remote State<br/>techchallenge-fiap-tfstate-890958457263<br/>k8s/terraform.tfstate")]
             
             subgraph AWSMessaging ["modules/messaging (Mensageria Assíncrona)"]
                 SNSTopic["AWS SNS Topic<br/>api-garage_notification-creation_topic"]
@@ -99,6 +102,20 @@ graph TB
         AppPods -.->|"Telemetria OTLP (:4318)"| NewRelic
     end
 ```
+
+### 🗄️ Backend Remoto de Estado no Amazon S3
+
+O Terraform utiliza o **Amazon S3** como backend remoto para persistência centralizada do arquivo de estado (`tfstate`), garantindo consistência, bloqueio e auditoria:
+
+| Parâmetro | Valor Configurado | Descrição |
+| :--- | :--- | :--- |
+| **Bucket S3** | `techchallenge-fiap-tfstate-890958457263` | Bucket dedicado ao armazenamento do estado de infraestrutura |
+| **Chave do Estado (`key`)** | `k8s/terraform.tfstate` | Caminho do estado isolado para este repositório de Kubernetes |
+| **Região AWS** | `us-east-1` | Mesma região dos recursos de rede, computação e mensageria |
+| **Versionamento** | `Status=Enabled` | Histórico completo de alterações e reversão de versões do `tfstate` |
+| **Provisionamento Automático** | GitHub Actions Pipeline | Step `Ensure Terraform State S3 Bucket Exists` que cria o bucket automaticamente caso o laboratório seja reiniciado |
+
+---
 
 ### 📬 Módulo de Mensageria (`modules/messaging`)
 
