@@ -38,4 +38,19 @@ output "keycloak_service_name" {
   value       = module.keycloak.service_name
 }
 
+output "notification_topic_arn" {
+  description = "SNS Notification Topic ARN"
+  value       = module.messaging.topic_arn
+}
+
+output "notification_queue_arn" {
+  description = "SQS Notification Queue ARN"
+  value       = module.messaging.queue_arn
+}
+
+output "notification_queue_url" {
+  description = "SQS Notification Queue URL"
+  value       = module.messaging.queue_url
+}
+
 

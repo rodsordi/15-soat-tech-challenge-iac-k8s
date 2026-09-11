@@ -186,9 +186,25 @@ resource "kubernetes_deployment" "garage_api" {
             }
           }
 
+          # --- AWS Messaging (SNS & SQS) Configuration ---
+          env {
+            name  = "SNS_ENABLED"
+            value = tostring(var.sns_enabled)
+          }
+
           env {
             name  = "SQS_ENABLED"
-            value = "false"
+            value = tostring(var.sqs_enabled)
+          }
+
+          env {
+            name  = "NOTIFICATION_TOPIC"
+            value = var.notification_topic
+          }
+
+          env {
+            name  = "NOTIFICATION_QUEUE"
+            value = var.notification_queue
           }
 
           env {

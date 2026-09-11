@@ -32,6 +32,11 @@ resource "kubernetes_namespace" "garage" {
   }
 }
 
+# --- AWS MESSAGING (SNS & SQS) ---
+module "messaging" {
+  source = "./modules/messaging"
+}
+
 module "app_garage" {
   source               = "./modules/app-garage"
   namespace_name       = kubernetes_namespace.garage.metadata[0].name
@@ -40,6 +45,10 @@ module "app_garage" {
   db_password          = var.db_password
   irsa_role_arn        = module.eks_cluster.irsa_role_arn
   newrelic_license_key = var.newrelic_license_key
+  sns_enabled          = true
+  sqs_enabled          = true
+  notification_topic   = module.messaging.topic_name
+  notification_queue   = module.messaging.queue_name
 
   depends_on = [module.eks_cluster, helm_release.metrics_server]
 }

@@ -60,3 +60,27 @@ variable "newrelic_license_key" {
   default     = ""
 }
 
+variable "sns_enabled" {
+  type        = bool
+  description = "Enable or disable AWS SNS messaging"
+  default     = true
+}
+
+variable "sqs_enabled" {
+  type        = bool
+  description = "Enable or disable AWS SQS messaging"
+  default     = true
+}
+
+variable "notification_topic" {
+  type        = string
+  description = "Name of SNS topic for notification events"
+  default     = "api-garage_notification-creation_topic"
+}
+
+variable "notification_queue" {
+  type        = string
+  description = "Name of SQS queue for notification events"
+  default     = "api-garage_notification-creation_queue"
+}
+
