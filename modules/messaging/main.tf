@@ -41,9 +41,10 @@ resource "aws_sqs_queue" "notification_creation_queue" {
 
 # --- SNS TO SQS SUBSCRIPTION (FANOUT) ---
 resource "aws_sns_topic_subscription" "notification_sqs_sub" {
-  topic_arn = aws_sns_topic.notification_creation_topic.arn
-  protocol  = "sqs"
-  endpoint  = aws_sqs_queue.notification_creation_queue.arn
+  topic_arn            = aws_sns_topic.notification_creation_topic.arn
+  protocol             = "sqs"
+  endpoint             = aws_sqs_queue.notification_creation_queue.arn
+  raw_message_delivery = true
 }
 
 # --- SQS QUEUE POLICY (ALLOW SNS TO SEND MESSAGES) ---
