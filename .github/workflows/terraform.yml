@@ -78,6 +78,15 @@ jobs:
         id: validate
         run: terraform validate -no-color
 
+      - name: Clean Up Orphan New Relic Dashboards
+        id: cleanup-dashboards
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action != 'destroy')
+        env:
+          NEWRELIC_API_KEY: ${{ secrets.NEWRELIC_API_KEY }}
+        run: |
+          chmod +x ./scripts/cleanup-newrelic-dashboards.sh
+          ./scripts/cleanup-newrelic-dashboards.sh
+
       - name: Terraform Plan
         id: plan
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'plan'
