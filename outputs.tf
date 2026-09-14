@@ -53,4 +53,19 @@ output "notification_queue_url" {
   value       = module.messaging.queue_url
 }
 
+output "ssm_keycloak_url_name" {
+  description = "SSM Parameter Name for Keycloak URL"
+  value       = aws_ssm_parameter.keycloak_url.name
+}
+
+output "ssm_garage_api_url_name" {
+  description = "SSM Parameter Name for API Garage URL"
+  value       = aws_ssm_parameter.garage_api_url.name
+}
+
+output "ssm_api_gateway_url_name" {
+  description = "SSM Parameter Name for API Gateway URL"
+  value       = aws_ssm_parameter.api_gateway_url.name
+}
+
 
