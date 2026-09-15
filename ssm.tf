@@ -22,6 +22,7 @@ resource "aws_ssm_parameter" "keycloak_url" {
   type        = "String"
   value       = "http://${data.aws_lb.keycloak_nlb.dns_name}:8080"
   description = "Keycloak internal NLB endpoint URL for Auth Lambda"
+  overwrite   = true
 
   tags = {
     Project     = "SOAT-TechChallenge"
@@ -35,6 +36,7 @@ resource "aws_ssm_parameter" "garage_api_url" {
   type        = "String"
   value       = "http://${data.aws_lb.garage_nlb.dns_name}:8080"
   description = "API Garage internal NLB endpoint URL for catalog propagation"
+  overwrite   = true
 
   tags = {
     Project     = "SOAT-TechChallenge"
@@ -48,6 +50,7 @@ resource "aws_ssm_parameter" "api_gateway_url" {
   type        = "String"
   value       = "${trimsuffix(module.api_gateway.api_gateway_url, "/")}/api"
   description = "Public API Gateway URL for Garage API"
+  overwrite   = true
 
   tags = {
     Project     = "SOAT-TechChallenge"
