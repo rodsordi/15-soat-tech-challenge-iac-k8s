@@ -4,7 +4,7 @@
   "permissions": "PUBLIC_READ_WRITE",
   "pages": [
     {
-      "name": "Technical Overview",
+      "name": "Infraestrutura & Performance",
       "widgets": [
         {
           "title": "Latência das APIs por Rota (p95 e p99)",
@@ -72,21 +72,8 @@
           }
         },
         {
-          "title": "Logs Estruturados Correlacionados com Erro (Logs in Context)",
-          "layout": { "column": 7, "row": 7, "width": 6, "height": 3 },
-          "visualization": { "id": "viz.table" },
-          "rawConfiguration": {
-            "nrqlQueries": [
-              {
-                "accountId": ${account_id},
-                "query": "SELECT timestamp, pod_name, capture(message, r'.*\"level\":\"(?P<Level>[A-Z]+)\".*') AS 'Level', capture(message, r'.*\"traceId\":\"(?P<TraceId>[a-f0-9]+)\".*') AS 'TraceId', capture(message, r'.*\"spanId\":\"(?P<SpanId>[a-f0-9]+)\".*') AS 'SpanId', message FROM Log WHERE (namespace_name = 'garage' OR namespaceName = 'garage') AND (message LIKE '%ERROR%' OR message LIKE '%WARN%' OR level IN ('ERROR', 'WARN')) SINCE 3 hours ago LIMIT 20"
-              }
-            ]
-          }
-        },
-        {
           "title": "Keycloak - Consumo de Recursos (CPU e Memória)",
-          "layout": { "column": 1, "row": 10, "width": 6, "height": 3 },
+          "layout": { "column": 7, "row": 7, "width": 6, "height": 3 },
           "visualization": { "id": "viz.line" },
           "rawConfiguration": {
             "nrqlQueries": [
@@ -98,21 +85,8 @@
           }
         },
         {
-          "title": "Keycloak - Uptime & Logs Recentes do Servidor de Autenticação",
-          "layout": { "column": 7, "row": 10, "width": 6, "height": 3 },
-          "visualization": { "id": "viz.table" },
-          "rawConfiguration": {
-            "nrqlQueries": [
-              {
-                "accountId": ${account_id},
-                "query": "SELECT timestamp, pod_name, message FROM Log WHERE (namespace_name = 'garage' OR namespaceName = 'garage') AND (pod_name LIKE '%keycloak%' OR podName LIKE '%keycloak%' OR message LIKE '%keycloak%') SINCE 3 hours ago LIMIT 20"
-              }
-            ]
-          }
-        },
-        {
           "title": "PostgreSQL / HikariCP - Conexões do Pool de Dados (Ativas vs Ociosas)",
-          "layout": { "column": 1, "row": 13, "width": 6, "height": 3 },
+          "layout": { "column": 1, "row": 10, "width": 6, "height": 3 },
           "visualization": { "id": "viz.line" },
           "rawConfiguration": {
             "nrqlQueries": [
@@ -125,13 +99,44 @@
         },
         {
           "title": "PostgreSQL - Tempo Médio de Consultas e Operações SQL (ms)",
-          "layout": { "column": 7, "row": 13, "width": 6, "height": 3 },
+          "layout": { "column": 7, "row": 10, "width": 6, "height": 3 },
           "visualization": { "id": "viz.line" },
           "rawConfiguration": {
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
                 "query": "SELECT average(hikaricp.connections.acquire * 1000) AS 'Duração Média Aquisição Pool (ms)', percentile(hikaricp.connections.acquire * 1000, 95) AS 'p95 Aquisição Pool (ms)' FROM Metric WHERE metricName = 'hikaricp.connections.acquire' TIMESERIES"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Troubleshooting & Logs in Context",
+      "widgets": [
+        {
+          "title": "Logs Estruturados da Aplicação (Logs in Context)",
+          "layout": { "column": 1, "row": 1, "width": 12, "height": 6 },
+          "visualization": { "id": "viz.table" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT timestamp, capture(message, r'.*\"level\":\"(?P<Level>[A-Z]+)\".*') AS 'Level', capture(message, r'.*\"message\":\"(?P<Mensagem>[^\"]+)\".*') AS 'Mensagem', capture(message, r'.*\"logger\":\"(?P<Logger>[^\"]+)\".*') AS 'Logger', capture(message, r'.*\"traceId\":\"(?P<TraceId>[a-f0-9]+)\".*') AS 'TraceId', pod_name FROM Log WHERE (namespace_name = 'garage' OR namespaceName = 'garage') AND message LIKE '%\"message\"%' AND (message LIKE '%\"level\":\"WARN\"%' OR message LIKE '%\"level\":\"ERROR\"%') SINCE 3 hours ago LIMIT 50"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Keycloak - Uptime & Logs Recentes do Servidor de Autenticação",
+          "layout": { "column": 1, "row": 7, "width": 12, "height": 5 },
+          "visualization": { "id": "viz.table" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT timestamp, pod_name, capture(message, r'^\\S+ (?:stdout|stderr) [FP] (?P<Mensagem>.*)') AS 'Mensagem' FROM Log WHERE (namespace_name = 'garage' OR namespaceName = 'garage') AND (pod_name LIKE '%keycloak%' OR podName LIKE '%keycloak%' OR message LIKE '%keycloak%') SINCE 3 hours ago LIMIT 50"
               }
             ]
           }
