@@ -73,7 +73,7 @@
         },
         {
           "title": "Distribuicao de Requisicoes por Rota de OS",
-          "layout": { "column": 1, "row": 4, "width": 5, "height": 4 },
+          "layout": { "column": 1, "row": 11, "width": 6, "height": 4 },
           "visualization": { "id": "viz.pie" },
           "rawConfiguration": {
             "nrqlQueries": [
@@ -85,21 +85,73 @@
           }
         },
         {
-          "title": "Tempo Medio de Execucao por Rota de Work Order (ms)",
-          "layout": { "column": 6, "row": 4, "width": 7, "height": 4 },
+          "title": "Tempo Medio de Execucao: Diagnostico (SLA)",
+          "layout": { "column": 1, "row": 4, "width": 4, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(garage.workorder.status.duration) AS 'Segundos', average(garage.workorder.status.duration) / 60 AS 'Minutos' FROM Metric WHERE metricName = 'garage.workorder.status.duration' AND status = 'DIAGNOSING' SINCE 24 hours ago RAW"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Tempo Medio de Execucao: Execucao (SLA)",
+          "layout": { "column": 5, "row": 4, "width": 4, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(garage.workorder.status.duration) AS 'Segundos', average(garage.workorder.status.duration) / 60 AS 'Minutos' FROM Metric WHERE metricName = 'garage.workorder.status.duration' AND status = 'EXECUTING' SINCE 24 hours ago RAW"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Tempo Medio de Execucao: Finalizacao (SLA)",
+          "layout": { "column": 9, "row": 4, "width": 4, "height": 3 },
+          "visualization": { "id": "viz.billboard" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(garage.workorder.status.duration) AS 'Segundos', average(garage.workorder.status.duration) / 60 AS 'Minutos' FROM Metric WHERE metricName = 'garage.workorder.status.duration' AND status = 'FINISHED' SINCE 24 hours ago RAW"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Tempo Medio de Execucao por Status (Diagnostico, Execucao, Finalizacao)",
+          "layout": { "column": 1, "row": 7, "width": 6, "height": 4 },
+          "visualization": { "id": "viz.bar" },
+          "rawConfiguration": {
+            "nrqlQueries": [
+              {
+                "accountId": ${account_id},
+                "query": "SELECT average(garage.workorder.status.duration) AS 'Tempo Medio (s)' FROM Metric WHERE metricName = 'garage.workorder.status.duration' FACET status SINCE 24 hours ago RAW"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Evolucao Temporal dos SLAs por Status de OS",
+          "layout": { "column": 7, "row": 7, "width": 6, "height": 4 },
           "visualization": { "id": "viz.line" },
           "rawConfiguration": {
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT average(http.server.requests) * 1000 AS 'Tempo Medio (ms)' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' FACET uri TIMESERIES SINCE 24 hours ago"
+                "query": "SELECT average(garage.workorder.status.duration) AS 'Tempo Medio (s)' FROM Metric WHERE metricName = 'garage.workorder.status.duration' FACET status TIMESERIES SINCE 24 hours ago"
               }
             ]
           }
         },
         {
           "title": "Throughput Operacional de Ordens por Minuto",
-          "layout": { "column": 1, "row": 8, "width": 6, "height": 4 },
+          "layout": { "column": 7, "row": 11, "width": 6, "height": 4 },
           "visualization": { "id": "viz.area" },
           "rawConfiguration": {
             "nrqlQueries": [
@@ -112,7 +164,7 @@
         },
         {
           "title": "Auditoria de Operacoes Recentes em Ordens de Servico",
-          "layout": { "column": 7, "row": 8, "width": 6, "height": 4 },
+          "layout": { "column": 1, "row": 15, "width": 12, "height": 4 },
           "visualization": { "id": "viz.table" },
           "rawConfiguration": {
             "nrqlQueries": [
