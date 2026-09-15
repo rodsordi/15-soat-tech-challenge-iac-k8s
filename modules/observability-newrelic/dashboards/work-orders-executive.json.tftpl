@@ -27,7 +27,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Ordens Criadas' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/work-orders' AND status = '201' SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Ordens Criadas' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/work-orders' AND status = '201' SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -40,7 +40,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Atualizacoes de Status' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/work-orders/{workOrderId}' AND method = 'PATCH' SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Atualizacoes de Status' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/work-orders/{workOrderId}' AND method = 'PATCH' SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -53,7 +53,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT percentage(count(*), WHERE status LIKE '2%' OR status LIKE '3%') AS 'Taxa de Sucesso (%)' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' SINCE 24 hours ago"
+                "query": "SELECT percentage(count(*), WHERE status LIKE '2%' OR status LIKE '3%') AS 'Taxa de Sucesso (%)' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -66,7 +66,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Erros em OS' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' AND (status LIKE '4%' OR status LIKE '5%') SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Erros em OS' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' AND (status LIKE '4%' OR status LIKE '5%') SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -79,7 +79,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' FACET uri SINCE 24 hours ago"
+                "query": "SELECT count(*) FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' FACET uri SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -118,7 +118,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Total Chamadas', latest(status) AS 'Ultimo Status', latest(outcome) AS 'Resultado' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' FACET uri, method SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Total Chamadas', latest(status) AS 'Ultimo Status', latest(outcome) AS 'Resultado' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/work-orders%' FACET uri, method SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -136,7 +136,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Clientes' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/customers' AND method = 'POST' AND status = '201' SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Clientes' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/customers' AND method = 'POST' AND status = '201' SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -149,7 +149,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Veiculos' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/vehicles%' AND method = 'POST' AND status = '201' SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Veiculos' FROM Metric WHERE metricName = 'http.server.requests' AND uri LIKE '%/vehicles%' AND method = 'POST' AND status = '201' SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -162,7 +162,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Pecas Cadastradas' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/inventory-materials' AND method = 'POST' AND status = '201' SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Pecas Cadastradas' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/inventory-materials' AND method = 'POST' AND status = '201' SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -175,7 +175,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Servicos' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/services' AND method = 'POST' AND status = '201' SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Servicos' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/services' AND method = 'POST' AND status = '201' SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -188,7 +188,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Notificacoes' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/notifications' SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Notificacoes' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/notifications' SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -201,7 +201,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Logins JWT' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/auth/login' AND status = '200' SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Logins JWT' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/auth/login' AND status = '200' SINCE 24 hours ago RAW"
               }
             ]
           }
@@ -214,7 +214,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Requisicoes' FROM Metric WHERE metricName = 'http.server.requests' AND uri NOT LIKE '%actuator%' FACET uri SINCE 24 hours ago LIMIT 10"
+                "query": "SELECT count(*) AS 'Requisicoes' FROM Metric WHERE metricName = 'http.server.requests' AND uri NOT LIKE '%actuator%' FACET uri SINCE 24 hours ago RAW LIMIT 10"
               }
             ]
           }
@@ -227,7 +227,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT count(*) AS 'Execucoes', latest(status) AS 'Status HTTP', latest(outcome) AS 'Resultado' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/services/calculateAverageTime' SINCE 24 hours ago"
+                "query": "SELECT count(*) AS 'Execucoes', latest(status) AS 'Status HTTP', latest(outcome) AS 'Resultado' FROM Metric WHERE metricName = 'http.server.requests' AND uri = '/v1/services/calculateAverageTime' SINCE 24 hours ago RAW"
               }
             ]
           }
