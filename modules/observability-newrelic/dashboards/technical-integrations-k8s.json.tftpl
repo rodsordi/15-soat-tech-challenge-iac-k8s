@@ -79,7 +79,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT timestamp, message, `trace.id`, `span.id`, level FROM Log WHERE namespaceName = 'garage' AND level IN ('ERROR', 'WARN') SINCE 3 hours ago LIMIT 20"
+                "query": "SELECT timestamp, pod_name, capture(message, r'.*\"level\":\"(?P<Level>[A-Z]+)\".*') AS 'Level', capture(message, r'.*\"traceId\":\"(?P<TraceId>[a-f0-9]+)\".*') AS 'TraceId', capture(message, r'.*\"spanId\":\"(?P<SpanId>[a-f0-9]+)\".*') AS 'SpanId', message FROM Log WHERE (namespace_name = 'garage' OR namespaceName = 'garage') AND (message LIKE '%ERROR%' OR message LIKE '%WARN%' OR level IN ('ERROR', 'WARN')) SINCE 3 hours ago LIMIT 20"
               }
             ]
           }
@@ -105,7 +105,7 @@
             "nrqlQueries": [
               {
                 "accountId": ${account_id},
-                "query": "SELECT timestamp, message, level FROM Log WHERE namespaceName = 'garage' AND (podName LIKE '%keycloak%' OR message LIKE '%keycloak%') SINCE 3 hours ago LIMIT 20"
+                "query": "SELECT timestamp, pod_name, message FROM Log WHERE (namespace_name = 'garage' OR namespaceName = 'garage') AND (pod_name LIKE '%keycloak%' OR podName LIKE '%keycloak%' OR message LIKE '%keycloak%') SINCE 3 hours ago LIMIT 20"
               }
             ]
           }
